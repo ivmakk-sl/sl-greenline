@@ -4,6 +4,8 @@ Greenline is a mod for the Steam game *Survival Log*. It replaces the HUD plant 
 
 Tend All queues pot chores within the character's available Stamina. With Auto-replant and Auto-fertilize enabled, it also plants the same crop again with fertilizer.
 
+Nexus page: https://www.nexusmods.com/survivallog/mods/17
+
 ## The pot grid
 
 The expanded plant list groups pots by floor. Each floor starts with its name and has one cell for each pot, including empty pots. A pot keeps its cell while it stays placed. Each row holds up to 6 cells. Additional cells continue on the next row.
