@@ -1,0 +1,514 @@
+/* The pot grid of the HUD plant list, the Tend All button, the Auto-replant line, and the hover card.
+   page.js writes this file (after tokens.css) into the CoreUI1 frame. */
+
+.mature-popover.greenline-grid {
+  display: grid;
+  gap: 3px;
+  max-width: none;
+  align-items: start;
+}
+
+.mature-popover.greenline-grid .mature-item-row {
+  display: none;
+}
+
+.greenline-floor-label {
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: bold;
+  color: rgb(from var(--gl-gold) r g b / 85%);
+  text-shadow: var(--gl-text-shadow);
+  letter-spacing: 0.3px;
+  padding: 3px 2px 1px;
+  white-space: nowrap;
+}
+
+/* The cell of a pot. */
+.greenline-cell {
+  position: relative;
+  width: 26px;
+  min-height: 26px;
+  box-sizing: border-box;
+  padding: 2px 0 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid rgb(from var(--gl-white) r g b / 15%);
+  border-radius: 4px;
+  background: rgb(from var(--gl-black) r g b / 30%);
+  cursor: pointer;
+}
+
+.greenline-cell .greenline-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.greenline-cell .greenline-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 1px var(--gl-black));
+}
+
+.greenline-cell .greenline-till {
+  position: absolute;
+  top: 11px;
+  right: 0;
+  width: 11px;
+  height: 11px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 1px var(--gl-black));
+}
+
+.greenline-cell.greenline-mature {
+  border-color: rgb(from var(--gl-gold) r g b / 90%);
+  box-shadow: 0 0 5px rgb(from var(--gl-gold) r g b / 60%);
+}
+
+.greenline-cell.greenline-urgent,
+.greenline-cell.greenline-problem {
+  border-color: var(--gl-red);
+}
+
+/* The game's pulse of an urgent crop (pulse-plant-urgent of CoreUI1). */
+.greenline-cell.greenline-urgent::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-color: rgb(from var(--gl-red) r g b / 35%);
+  opacity: 0;
+  animation: pulse-plant-urgent 1.8s infinite ease-in-out;
+  pointer-events: none;
+}
+
+.greenline-cell .greenline-time {
+  font-family: Consolas, monospace;
+  font-size: 8px;
+  line-height: 9px;
+  color: rgb(from var(--gl-white) r g b / 70%);
+  text-shadow: var(--gl-text-shadow);
+  white-space: nowrap;
+}
+
+.greenline-cell.greenline-mature .greenline-time {
+  color: rgb(from var(--gl-gold) r g b / 95%);
+  font-weight: bold;
+}
+
+.greenline-cell.greenline-urgent .greenline-time {
+  color: var(--gl-red-text);
+  font-weight: bold;
+}
+
+/* The game's problem icons are white, so a problem badge sits on a red disc. */
+.greenline-cell.greenline-urgent .greenline-badge,
+.greenline-cell.greenline-problem .greenline-badge {
+  box-sizing: border-box;
+  padding: 1px;
+  border-radius: 50%;
+  background: var(--gl-red);
+}
+
+/* The game's pause icon of the speed control, at the height of a countdown line, in red. */
+.greenline-cell .greenline-pause {
+  display: flex;
+  gap: 2px;
+  height: 9px;
+  align-items: center;
+}
+
+.greenline-cell .greenline-pause i {
+  width: 2px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--gl-red-text);
+  box-shadow: 0 0 3px rgb(from var(--gl-red-text) r g b / 45%);
+}
+
+@media (hover: hover) {
+  .greenline-cell:hover {
+    background-color: rgb(from var(--gl-gold) r g b / 12%);
+  }
+}
+
+/* The header: the game's Patrol button and replant checkbox hide while the Tend All button shows. */
+.mature-panel.greenline-patrol .mature-patrol-btn,
+.mature-panel.greenline-patrol .mature-replant-chk {
+  display: none;
+}
+
+/* The same look as the Take All button of Trapline. */
+.greenline-tend-btn {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--gl-white);
+  background: rgb(from var(--gl-gold) r g b / 18%);
+  border: 1px solid rgb(from var(--gl-gold) r g b / 50%);
+  border-radius: 3px;
+  padding: 1px 6px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.greenline-tend-btn:hover {
+  background: rgb(from var(--gl-gold) r g b / 32%);
+}
+
+/* The font of the game's header checkbox, and a box in the amber of the Tend All button. */
+.greenline-replant {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  padding-top: 4px;
+  border-top: 1px solid rgb(from var(--gl-gold) r g b / 15%);
+  cursor: pointer;
+  user-select: none;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 10px;
+  color: rgb(from var(--gl-white) r g b / 85%);
+  text-shadow: var(--gl-text-shadow);
+  white-space: nowrap;
+}
+
+.greenline-replant input {
+  appearance: none;
+  flex-shrink: 0;
+  margin: 0;
+  width: 11px;
+  height: 11px;
+  box-sizing: border-box;
+  border: 1px solid rgb(from var(--gl-gold) r g b / 50%);
+  border-radius: 2px;
+  background: rgb(from var(--gl-black) r g b / 35%);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 9px 9px;
+  cursor: pointer;
+}
+
+.greenline-replant input:checked {
+  background-color: rgb(from var(--gl-gold) r g b / 85%);
+  border-color: rgb(from var(--gl-gold) r g b / 95%);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 5.2l2 2 4-4.4' fill='none' stroke='%23201a08' stroke-width='1.6'/%3E%3C/svg%3E");
+}
+
+@media (hover: hover) {
+  .greenline-replant:hover {
+    color: var(--gl-gold);
+  }
+
+  .greenline-replant:hover input {
+    border-color: rgb(from var(--gl-gold) r g b / 90%);
+  }
+}
+
+.greenline-replant > .greenline-tip {
+  left: 0;
+  top: auto;
+  bottom: calc(100% + 6px);
+  transform: none;
+  white-space: normal;
+  max-width: 220px;
+}
+
+/* The .size-chip rules of ShopUI.html, with smaller squares to match the 14px icons of the card: one
+   square for each unit of size. */
+.greenline-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 4px;
+  color: var(--gl-chip-text);
+  font-weight: normal;
+  font-size: 10px;
+  height: 14px;
+  line-height: 14px;
+}
+
+.greenline-chip .cells {
+  display: grid;
+  gap: 1px;
+  height: 14px;
+  align-content: center;
+  justify-content: start;
+}
+
+.greenline-chip .cells.s1 {
+  grid-template-columns: 4px;
+  grid-template-rows: 4px;
+}
+
+.greenline-chip .cells.s2 {
+  grid-template-columns: repeat(2, 4px);
+  grid-template-rows: 4px;
+}
+
+.greenline-chip .cells.s4 {
+  grid-template-columns: repeat(2, 4px);
+  grid-template-rows: repeat(2, 4px);
+}
+
+.greenline-chip .cell {
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: rgb(from var(--gl-chip) r g b / 85%);
+  box-shadow: 0 0 0 0.5px rgb(from var(--gl-black) r g b / 40%);
+}
+
+/* The hover card: a header, then key rows in a two-column grid. */
+.greenline-tip .greenline-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 5px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid var(--gl-border);
+  white-space: nowrap;
+}
+
+.greenline-tip .greenline-card-slot {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: var(--gl-slot-bg);
+  border: 1px solid var(--gl-border);
+  border-radius: 6px;
+  box-shadow: var(--gl-slot-shadow);
+}
+
+.greenline-tip .greenline-card-slot img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+/* The names fill the height of the icon slot, so the pot pill ends on the bottom edge of the slot. */
+.greenline-tip .greenline-card-names {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 36px;
+}
+
+.greenline-tip .greenline-card-names.greenline-card-one {
+  justify-content: center;
+}
+
+.greenline-tip .greenline-card-name,
+.greenline-tip .greenline-card-sub {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 16px;
+}
+
+.greenline-tip .greenline-card-name {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--gl-white);
+}
+
+.greenline-tip .greenline-card-sub {
+  color: var(--gl-muted);
+}
+
+.greenline-tip .greenline-card-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 16px;
+  box-sizing: border-box;
+  padding: 0 5px 0 3px;
+  border-radius: 3px;
+  border: 1px solid var(--gl-border);
+  background: var(--gl-slot-bg);
+}
+
+/* The game's pot icons draw the pot low in their square, and the text sits high in its line, so the
+   text line is the icon height and the icon moves up by 1px to share the center line. */
+.greenline-tip .greenline-card-pill img {
+  display: block;
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  flex-shrink: 0;
+  position: relative;
+  top: -1px;
+}
+
+.greenline-tip .greenline-card-pill .greenline-card-text {
+  line-height: 14px;
+}
+
+.greenline-tip .greenline-card-head .greenline-chip {
+  margin-left: 0;
+  display: flex;
+  align-items: center;
+  height: 14px;
+}
+
+.greenline-tip .greenline-card-head .greenline-chip .cells {
+  height: auto;
+}
+
+.greenline-tip .greenline-card-head .greenline-chip .cell {
+  background: rgb(from var(--gl-white) r g b / 40%);
+}
+
+.greenline-tip .greenline-card-value .greenline-muted {
+  color: var(--gl-muted);
+}
+
+/* Chinese full-width brackets carry their own space, so the auto value needs no gap. */
+.greenline-tip.greenline-zh .greenline-fert-auto {
+  margin-left: -5px;
+}
+
+.greenline-tip .greenline-card-rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  row-gap: 3px;
+  align-items: center;
+}
+
+.greenline-tip .greenline-card-row {
+  display: contents;
+}
+
+.greenline-tip .greenline-card-key {
+  color: var(--gl-muted);
+  white-space: nowrap;
+}
+
+.greenline-tip .greenline-card-value {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  color: var(--gl-white);
+}
+
+.greenline-tip .greenline-card-value img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* A crop or pot with no icon keeps the room of its icon. */
+.greenline-tip .greenline-card-slot img:not([src]) {
+  visibility: hidden;
+}
+
+.greenline-tip .greenline-card-value.greenline-red {
+  color: var(--gl-red-text);
+  font-weight: bold;
+}
+
+/* The game's problem icons are white; this filter turns white into the red text color (--gl-red-text). */
+.greenline-tip .greenline-card-value.greenline-red img {
+  filter: brightness(0) saturate(100%) invert(58%) sepia(52%) saturate(2900%) hue-rotate(322deg) brightness(103%) contrast(101%);
+}
+
+.greenline-tip .greenline-card-value.greenline-gold {
+  color: var(--gl-gold);
+}
+
+.greenline-tip .greenline-card-value.greenline-muted {
+  color: var(--gl-muted);
+}
+
+/* The bars: a dark track, a fill in the game's growth green (dim gold when ripe, dim red when stalled),
+   and white text with a dark shadow, readable on any fill. */
+.greenline-tip .greenline-bar {
+  position: relative;
+  flex: 1;
+  min-width: 130px;
+  height: 14px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: rgb(from var(--gl-black) r g b / 45%);
+  border: 1px solid var(--gl-border);
+}
+
+.greenline-tip .greenline-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--gl-grow);
+}
+
+.greenline-tip .greenline-bar.greenline-ripe .greenline-bar-fill {
+  background: rgb(from var(--gl-ripe) r g b / 60%);
+}
+
+.greenline-tip .greenline-bar.greenline-stalled .greenline-bar-fill {
+  background: rgb(from var(--gl-red) r g b / 55%);
+}
+
+.greenline-tip .greenline-bar-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: normal;
+  color: var(--gl-white);
+  text-shadow: 0 1px 2px var(--gl-black), 0 0 3px var(--gl-black);
+}
+
+.greenline-tip .greenline-bar .greenline-pause {
+  display: inline-flex;
+  gap: 2px;
+  height: auto;
+}
+
+.greenline-tip .greenline-bar .greenline-pause i {
+  width: 2px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--gl-white);
+  box-shadow: 0 0 2px var(--gl-black);
+}
+
+/* The pot card next to the pointer, for a grid cell or a pot in the game world: the game's .entry-tip,
+   always shown while the node shows, and never in the way of a click on the world. Above the HUD panels
+   (the top-left panel is at 100), at the layer of the game's own floating tip (.pp-tooltip). */
+.greenline-hover.has-entry-tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.greenline-hover[hidden] {
+  display: none;
+}
+
+.greenline-hover > .greenline-tip {
+  position: static;
+  transform: none;
+  opacity: 1;
+  font-size: 11px;
+}

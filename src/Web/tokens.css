@@ -1,0 +1,24 @@
+/* The colors and shared looks of Greenline, once. C# puts this file before page.css in the HUD frame and
+   before plantpanel.css in the two plant windows. A rule uses a token, never a raw color (stylelint checks
+   it); an opacity stays at the rule, through the relative color syntax: rgb(from var(--gl-gold) r g b / 50%). */
+:root {
+  --gl-white: #fff;
+  --gl-black: #000;
+  --gl-gold: #ffc107;
+  --gl-red: #d32f2f;
+  --gl-red-text: #ff6b6b;
+  --gl-grow: #0f9b6e;
+  --gl-ripe: #d69e00;
+  --gl-slot: #0a0f0c;
+  --gl-chip: #e6e6e6;
+  --gl-chip-text: #bbb;
+
+  /* The line of the card and of the game's plant windows (their --border-color). */
+  --gl-border: rgb(from var(--gl-white) r g b / 12%);
+  --gl-muted: rgb(from var(--gl-white) r g b / 55%);
+  --gl-text-shadow: 1px 1px 2px var(--gl-black);
+
+  /* The icon slot of the planting window (.icon-wrapper): a dark square with an inner shadow. */
+  --gl-slot-bg: rgb(from var(--gl-slot) r g b / 80%);
+  --gl-slot-shadow: inset 0 2px 4px rgb(from var(--gl-black) r g b / 60%);
+}

@@ -1,0 +1,1 @@
+A pot grid for the HUD plant list, the game's hidden Tend All switched on, and Auto-replant with Auto-fertilize.

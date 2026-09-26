@@ -1,0 +1,41 @@
+Pots need a lot of care: pests, weeds, water, the harvest, a Till, and a new seed. The game's plant list shows one long row for each crop, and each chore is a click on the pot, a walk, and a menu. Greenline shows all your pots at a glance, and one "Tend All" click does the chores of every pot.
+
+[size=5]Main features[/size]
+[list]
+[*][b]Pot grid.[/b] The open plant list is a compact grid, with one line for each floor and one cell for each pot, also an empty pot. A cell shows the crop icon, a gold border for a mature crop, and the game's icon of the most urgent problem. Pest and Frost can kill the crop, so their cell pulses red. Weeds, Drought, and Low Light only stop the growth, so their cell has a red border.[/*]
+[*][b]Countdowns.[/b] Under each cell is the time until the crop dies of Pest or Frost, the time until the harvest window ends, or the time until the crop is mature. A crop whose growth has stopped shows a red pause mark.[/*]
+[*][b]Pot card.[/b] Point at a cell, or at a pot in the game world, to see the pot and the crop with their sizes, the state, each problem, the full times, and the fertilizer. A click on a cell moves the camera to the pot and opens its menu.[/*]
+[*][b]Tend All.[/b] The game has a Tend All feature that queues the chores of all your pots, but the released game keeps it switched off. Greenline switches it on. It needs planting level 3. The chores, their order, their Stamina cost, and the stop when your Stamina runs low are the game's own.[/*]
+[*][b]Auto-replant.[/b] With the Auto-replant checkbox under the grid on, Tend All plants the same crop again after a harvest, with no planting window. It uses the game's own planting action, with the normal Stamina cost and the seeds from the same containers as the planting window.[/*]
+[*][b]Options for each pot.[/b] The planting window and the window of a growing crop have two checkboxes: Auto-replant (on by default) and Auto-fertilize (off by default). Auto-fertilize adds the best fertilizer of which you have enough for the pot. When none is enough, the pot gets no fertilizer, and a pop text tells you.[/*]
+[*][b]Clear stop.[/b] When the replant cannot plant (too few seeds, the crop does not fit the pot, not enough light, or too cold), the planting window opens with the last crop's seed selected and a red line with the reason. You still click Plant yourself.[/*]
+[*][b]English and Chinese.[/b][/*]
+[/list]
+
+The last crop and the two options of each pot stay in the save. The game ignores these values, so a save still loads when you remove the mod.
+
+[size=5]Requirements[/size]
+[list]
+[*][url=https://www.nexusmods.com/survivallog/mods/12]BepInEx for Survival Log[/url]. Install it first.[/*]
+[/list]
+
+[size=5]Installation[/size]
+[list=1]
+[*]Install [url=https://www.nexusmods.com/survivallog/mods/12]BepInEx[/url] [i](if no other mods were installed before, start the game once so BepInEx finishes setup, then quit)[/i].[/*]
+[*]Extract this mod's zip into the game folder (the folder with the game .exe). The DLL lands in BepInEx\plugins. Full path example:
+[list]
+[*]Steam:
+[code]C:\Program Files (x86)\Steam\steamapps\common\Survival Log\BepInEx\plugins\Greenline.dll[/code]
+[/*]
+[/list]
+[/*]
+[/list]
+
+[size=5]Uninstall[/size]
+Delete Greenline.dll from the BepInEx\plugins folder.
+
+[size=5]Configuration[/size]
+The mod creates [font=Courier New]BepInEx\config\com.ivmakk.survivallog.greenline.cfg[/font] when you first start the game with the mod installed. [font=Courier New]EnablePatrol[/font] switches Tend All on or off, and [font=Courier New]WorldHoverCard[/font] shows or hides the pot card in the game world. Both are on by default. Edit the file while the game is closed. An edit applies at the next game start. See [url=https://github.com/ivmakk-sl/sl-greenline/blob/main/CONFIG.md]CONFIG.md[/url] for each entry and its effect.
+
+[size=5]Source and license[/size]
+Open source under GPL-3.0: [url=https://github.com/ivmakk-sl/sl-greenline]github.com/ivmakk-sl/sl-greenline[/url]

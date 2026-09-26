@@ -1,0 +1,79 @@
+/* The pot options (Auto-replant, Auto-fertilize) and the reason line of the two plant windows.
+   plantpanel.js writes this file (after tokens.css) into the planting window and the growing crop window.
+   The colors fall back to the game's own variables of these windows, so they follow a game restyle. */
+:root {
+  --gl-option-text: var(--text-dark, #9ca3af);
+  --gl-option-line: var(--border-color, rgb(255 255 255 / 20%));
+  --gl-life: var(--life-green, #34d399);
+  --gl-life-dark: var(--life-green-dark, #10b981);
+  --gl-danger: var(--danger-red, #e05555);
+}
+
+.greenline-options {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;
+  margin-right: 16px;
+}
+
+.panel > .greenline-options {
+  justify-content: center;
+  margin: 14px 0 0;
+}
+
+.greenline-option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--gl-option-text);
+  white-space: nowrap;
+}
+
+.greenline-option:hover {
+  color: var(--gl-white);
+}
+
+/* The game's icon slot as the box, with a check in the game's green. */
+.greenline-option input {
+  appearance: none;
+  flex-shrink: 0;
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid var(--gl-option-line);
+  border-radius: 4px;
+  background: var(--gl-slot-bg) center / 12px 12px no-repeat;
+  box-shadow: var(--gl-slot-shadow);
+  cursor: pointer;
+}
+
+.greenline-option:hover input {
+  border-color: var(--gl-life);
+}
+
+.greenline-option input:checked {
+  background-color: var(--gl-life-dark);
+  border-color: var(--gl-life);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2l2.4 2.4 4.6-5' fill='none' stroke='white' stroke-width='1.8'/%3E%3C/svg%3E");
+}
+
+/* The look of the game's own warning line (state.selection.warningText). */
+.greenline-reason {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--gl-danger);
+  background: rgb(from var(--gl-danger) r g b / 10%);
+  border: 1px solid rgb(from var(--gl-danger) r g b / 20%);
+  text-align: center;
+}

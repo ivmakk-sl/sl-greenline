@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\Grid\GridLogic.cs" Link="GridLogic.cs" />
+    <Compile Include="..\..\src\Hover\HoverLogic.cs" Link="HoverLogic.cs" />
+    <Compile Include="..\..\src\Replant\ReplantLogic.cs" Link="ReplantLogic.cs" />
+    <Compile Include="..\..\src\PotOptions\SaveKeyLogic.cs" Link="SaveKeyLogic.cs" />
+    <Compile Include="..\..\src\Web\PageJson.cs" Link="PageJson.cs" />
+    <Compile Include="..\..\src\Web\PageIncludes.cs" Link="PageIncludes.cs" />
+    <None Include="..\fixtures\pots.json" Link="fixtures\pots.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageReference Include="xunit.v3" Version="4.0.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />
+  </ItemGroup>
+
+</Project>

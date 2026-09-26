@@ -1,0 +1,13 @@
+{
+  "name": "greenline-page-tests",
+  "private": true,
+  "scripts": {
+    "test": "node --test --test-force-exit",
+    "lint": "stylelint --config .stylelintrc.json \"../../src/**/*.css\""
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.0",
+    "stylelint": "^17.15.0",
+    "stylelint-config-recommended": "^18.0.0"
+  }
+}
