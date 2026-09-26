@@ -13,6 +13,13 @@
   --gl-chip: #e6e6e6;
   --gl-chip-text: #bbb;
 
+  /* The backgrounds of the game's plant list (.mature-popover) and tooltip (.entry-tip), with the default
+     opacities of the config. C# puts a :root rule with the config values after the CSS files. */
+  --gl-panel: #212121;
+  --gl-tip: #0f0f0f;
+  --gl-panel-opacity: 90%;
+  --gl-card-opacity: 96%;
+
   /* The line of the card and of the game's plant windows (their --border-color). */
   --gl-border: rgb(from var(--gl-white) r g b / 12%);
   --gl-muted: rgb(from var(--gl-white) r g b / 55%);

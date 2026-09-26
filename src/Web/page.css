@@ -138,6 +138,18 @@
   }
 }
 
+/* The backgrounds of the list header, the grid, and the cards, with the opacities of the config. Only the
+   background changes: the icons, the text, and the borders stay fully visible. The header and the grid have
+   one even background, with no fade at the ends as in the game's band, so 1 is solid from edge to edge. */
+.mature-panel .mature-toggle-row,
+.mature-popover.greenline-grid {
+  background: rgb(from var(--gl-panel) r g b / var(--gl-panel-opacity));
+}
+
+.entry-tip.greenline-tip {
+  background: rgb(from var(--gl-tip) r g b / var(--gl-card-opacity));
+}
+
 /* The header: the game's Patrol button and replant checkbox hide while the Tend All button shows. */
 .mature-panel.greenline-patrol .mature-patrol-btn,
 .mature-panel.greenline-patrol .mature-replant-chk {

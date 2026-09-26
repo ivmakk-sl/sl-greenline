@@ -23,4 +23,5 @@ Tracks the mod's Nexus page details.
 - Short description: `short-description.txt` (the draft-dialog field, 350-char limit; kept to one line).
 - Full description: `description.bbcode` (paste into the editor's raw BBCode mode).
 - Changelog: none for `1.0.0`. The first release has nothing to change. `changelog.txt` starts with the release that follows.
-- Background (1300x372) and gallery images (1920x1080): not prepared yet. They go in `images/`, with an `images/README.md` that records the role of each image.
+- Background: `images/sl-greenline-banner.jpg` (1300x372). Set as the mod page background.
+- Gallery images (1920x1080), in this order: `images/sl-greenline-thumb.jpg` (title card, pick as the mods-grid thumbnail), `images/sl-greenline-auto.jpg` (the pot options), `images/sl-greenline-sample1.jpg` (the pot grid with a card), `images/sl-greenline-sample2.jpg` (the card in the game world). See `images/README.md` for each role.

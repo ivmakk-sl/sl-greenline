@@ -1,1 +1,1 @@
-A pot grid for the HUD plant list, the game's hidden Tend All switched on, and Auto-replant with Auto-fertilize.
+Track crop growth and problems in a compact pot grid, with Tend All and automatic replanting.

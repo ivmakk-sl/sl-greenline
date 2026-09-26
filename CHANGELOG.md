@@ -18,3 +18,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Two options for each pot, in the planting window header and in the window of a growing crop: Auto-replant (on by default) and Auto-fertilize (off by default). Auto-fertilize adds the best fertilizer of which you have enough, or plants with none and shows a pop text.
 - When the replant cannot plant, the planting window opens with the last crop's seed selected and a line with the reason. A planting window opened by hand also selects the last crop's seed.
 - The last crop and the two options of each pot stay in the save.
+- Config `PanelOpacity` and `CardOpacity`: the background opacity of the plant list (its header and the pot grid) and of the pot card. The icons and the text stay fully visible. The default of the plant list is 0.9, more solid than the game's 0.6. The default of the card is the game's 0.96.

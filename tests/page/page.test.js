@@ -171,6 +171,29 @@ if (!gameFileExists) {
     assert.equal(styles[0].textContent, pageCss);
   });
 
+  // The selectors of each page.css rule whose value uses the token.
+  function selectorsUsing(token) {
+    const css = fs.readFileSync(path.join(SRC_DIR, 'page.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const out = [];
+    for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      if (m[2].includes('var(' + token + ')')) out.push(...m[1].split(',').map((s) => s.trim()));
+    }
+    return out;
+  }
+
+  test('jsdom: the background opacity rules reach the header, the grid, and the pot card of the game page', async (t) => {
+    const { doc } = await setup(t);
+    hoverCell(doc, 1001);
+
+    const panel = selectorsUsing('--gl-panel-opacity');
+    const cardRule = selectorsUsing('--gl-card-opacity');
+    assert.deepEqual([panel.length, cardRule.length], [2, 1]);
+    assert.ok(doc.querySelector(panel[0]).classList.contains('mature-toggle-row'), panel[0]);
+    assert.ok(doc.querySelector(panel[1]).classList.contains('mature-popover'), panel[1]);
+    const potCard = doc.querySelector('.greenline-pot-card');
+    assert.ok(potCard && potCard.matches(cardRule[0]), cardRule[0]);
+  });
+
   test('jsdom: each floor has a label in column 1 that spans its lines', async (t) => {
     const { doc } = await setup(t);
 

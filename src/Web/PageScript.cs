@@ -12,13 +12,14 @@ namespace Greenline
         private static readonly HashSet<string> loggedOther = new HashSet<string>();
 
         // The files of page/ are embedded as "<namespace>.Web.page.<file>".
-        private static string Script() => script ?? (script = WithCss("__greenlineCss", "page.css")
+        private static string Script() => script ?? (script =
+            WithCss("__greenlineCss", "page.css", PageStyle.OpacityRule(Plugin.PanelOpacity.Value, Plugin.CardOpacity.Value))
             + PageIncludes.Join(Resource("page.js"), file => Resource("page." + file)));
 
-        // The script text that sets window.<global> to tokens.css and the named CSS file, which the page
-        // script writes into its frame's style node.
-        internal static string WithCss(string global, string cssFile) =>
-            "window." + global + "=" + PageJson.Str(Resource("tokens.css") + "\n" + Resource(cssFile)) + ";";
+        // The script text that sets window.<global> to tokens.css, the named CSS file, and any extra CSS,
+        // which the page script writes into its frame's style node.
+        internal static string WithCss(string global, string cssFile, string extraCss = "") =>
+            "window." + global + "=" + PageJson.Str(Resource("tokens.css") + "\n" + Resource(cssFile) + "\n" + extraCss) + ";";
 
         internal static string Resource(string fileName)
         {

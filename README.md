@@ -1,37 +1,54 @@
 # Greenline
 
-A mod for the Steam game *Survival Log* that shows all your pots at a glance and automates their care. The HUD plant list becomes a grid of pots, and one "Tend All" click does the chores of every pot: remove pests and weeds, water, harvest, till, and plant the same crop again, with the fertilizer you choose.
+Greenline is a mod for the Steam game *Survival Log*. It replaces the HUD plant list with a pot grid and enables the game's hidden Tend All feature.
+
+Tend All queues pot chores within the character's available Stamina. With Auto-replant and Auto-fertilize enabled, it also plants the same crop again with fertilizer.
 
 ## The pot grid
 
-The open plant list is a compact grid, with one line for each floor. The line starts with the floor name, and each pot of that floor has one cell, also an empty pot. A pot keeps its cell while it stays placed. A line has at most 6 cells, and more cells continue on the next line.
+The expanded plant list groups pots by floor. Each floor starts with its name and has one cell for each pot, including empty pots. A pot keeps its cell while it stays placed. Each row holds up to 6 cells. Additional cells continue on the next row.
 
-- A cell shows the crop icon, or the pot icon for an empty pot. A pot that needs a Till shows the pot icon with a Till mark.
+- Each cell shows the crop icon, or the pot icon if the pot is empty. A pot that needs the Till chore also shows a Till mark.
 - A mature crop has a gold border.
-- A crop with a problem shows the game's icon for the most urgent problem on a red disc. Pest and Frost can kill the crop, so their cell pulses red. Weeds, Drought, and Low Light only stop the growth, so their cell has a red border.
-- Under each cell is a countdown: the time until the crop dies of Pest or Frost, the time until the harvest window ends, or the time until the crop is mature. A crop whose growth has stopped shows a red pause mark in its place, the same two bars as the game's pause icon. The game gives the stopped time back when you clear the problem.
-- The hover card of a cell shows the pot and the crop with their sizes, the state, each problem, the full times, the fertilizer, and the Auto-fertilize value of the pot.
-- The card shows next to the pointer, for a cell and when the pointer is on a pot in the game world.
-- A click on a cell moves the camera to the pot and opens its menu, also for an empty pot.
+- A crop with problems shows the game's icon for the most urgent problem on a red disc. Pest and Frost can kill the crop, so the cell pulses red. Weeds, Drought, and Low Light stop growth, so the cell has a red border.
+- Each cell shows a countdown below its icon. This shows the time until death from Pest or Frost, the end of the harvest window, or crop maturity.
+- If growth stops, a red pause mark replaces the countdown. It uses the same two bars as the game's pause icon. The game restores the paused growth time when you resolve the problem.
+- Point at a cell to see its pot card next to the pointer. The card shows the pot and crop sizes, crop state, all problems, full times, fertilizer, and the pot's Auto-fertilize setting.
+- Point at a pot in the game world to see the same card.
+- Click a cell to move the camera to the pot and open its menu. This also works for empty pots.
 
 ## Tend All
 
-The game has a "Tend All" feature that queues the chores of all your pots, but the released game keeps it switched off. Greenline turns it on. It needs planting level 3. A "Tend All" button shows in the header of the plant list while at least one chore waits, and the game's own "Tend ×N" quick action shows in the bottom bar.
+Greenline enables the game's hidden Tend All feature. It requires planting level 3. The Tend All button appears in the plant list header when at least one chore is pending. The game's Tend ×N quick action also appears in the bottom bar.
 
-Tend All is the game's own feature: the chores, their order, their Stamina cost, and the stop when your Stamina runs low are the game's. To keep the game without it, set `EnablePatrol` to false in the config (see [CONFIG.md](CONFIG.md)) and restart the game. The grid works either way.
+Tend All uses the game's chores, chore order, and Stamina costs. It stops when the character's Stamina is too low. Chores include removing pests and weeds, watering, harvesting, tilling, and planting.
+
+To disable Tend All, set `EnablePatrol` to `false` in the config file. Restart the game to apply the change. The pot grid still works. See [CONFIG.md](CONFIG.md).
 
 ## Replant and fertilize
 
-The "Auto-replant" checkbox under the grid is the global switch: with it on, Tend All tills a harvested pot and plants the same crop again. Greenline plants it with no planting window, through the game's own planting action, so it takes the normal Stamina and the seeds from the same containers as the planting window.
+The **Auto-replant** checkbox under the grid controls replanting for all pots. When enabled, Tend All tills harvested pots and plants the same crops again, subject to each pot's Auto-replant setting.
 
-Each pot also has its own two options. You find them in the header of the planting window and under the timer of the window of a growing crop, and a click applies at once:
+Greenline replants without requiring you to use the planting window. It uses the game's planting action, normal Stamina cost, and seeds from the same containers as the planting window.
 
-- Auto-replant (on by default): with it off, Tend All still harvests and tills that pot, but leaves it empty for you.
-- Auto-fertilize (off by default): with it on, the replant adds the best fertilizer of which you have enough for the pot (Premium Organic, then Compound, then Basic). When no fertilizer is enough, the pot is replanted with no fertilizer, and a pop text tells you.
+Each pot also has two settings. They appear in the planting window header and below the timer in the window for a growing crop. Changes apply immediately.
 
-When the replant cannot plant (too few seeds, the crop does not fit the pot, not enough light, too cold, or an unknown last crop), the planting window opens as usual, with the last crop's seed selected and a red line above the Plant button with the reason. A planting window that you open by hand also selects the seed of the pot's last crop. You still click Plant yourself.
+- **Auto-replant** is enabled by default. When disabled, Tend All still harvests and tills that pot but leaves it empty.
+- **Auto-fertilize** is disabled by default. When enabled, replanting uses the best fertilizer available in sufficient quantity for the pot: Premium Organic, then Compound, then Basic. If no fertilizer has sufficient quantity, Greenline replants without fertilizer and shows a message.
 
-The last crop, Auto-replant, and Auto-fertilize of each pot go in the save, in the game's own counter table, so they go back with a day restore of the game. The game ignores these values, so a save still loads when you remove the mod.
+If Greenline cannot replant, it opens the planting window. A red message above the Plant button explains the reason:
+
+- There are too few seeds.
+- The crop does not fit the pot.
+- There is not enough light.
+- The temperature is too low.
+- Greenline does not know the pot's last crop.
+
+The window selects the last crop's seed if that seed appears in the list. You must click Plant to start planting.
+
+When you open the planting window manually, Greenline also selects the last crop's seed if available and if the crop fits. You must still click Plant.
+
+Greenline stores each pot's last crop, Auto-replant setting, and Auto-fertilize setting in the save, using the game's counter table. Restoring a day also restores these values. The game ignores them without Greenline, so you can still load the save after removing the mod.
 
 ## Requirements
 
@@ -45,33 +62,37 @@ The [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/1
 
 ## Uninstall
 
-Delete `Greenline.dll` from the `BepInEx\plugins` folder. The plant list looks and works as without the mod on the next start, and Tend All is switched off again.
+Delete `Greenline.dll` from the `BepInEx\plugins` folder. On the next game start, the plant list returns to its appearance and behavior without Greenline. Tend All is disabled again.
 
 ## Configuration
 
-The config file `BepInEx\config\com.ivmakk.survivallog.greenline.cfg` turns Tend All and the world hover card on or off, and turns on debug logging. See [CONFIG.md](CONFIG.md) for the entries, their defaults, and when an edit applies.
+The config file is `BepInEx\config\com.ivmakk.survivallog.greenline.cfg`. It controls Tend All, the pot card in the game world, background opacity, and debug logging. See [CONFIG.md](CONFIG.md) for the settings, defaults, and when changes apply.
 
 ## Troubleshooting
 
-If a game update changes the plant list or the plant windows, Greenline turns off only the feature that needs the missing part and keeps the rest working. Look in `BepInEx\LogOutput.log` for the `Greenline loaded.` line and for a warning or an error from Greenline.
+If a game update removes a required part of the plant list or crop windows, Greenline disables the affected feature. The remaining features continue to work.
+
+Check `BepInEx\LogOutput.log` for the `Greenline loaded.` line. Check for warnings or errors from Greenline.
 
 ## Build
 
-This is a BepInEx 6 IL2CPP plugin. It compiles against the game's IL2CPP interop assemblies, so a game install with BepInEx set up and started once is required. Those assemblies are game-derived and are not part of this repo. The .NET 8 SDK is required.
+Greenline is a BepInEx 6 IL2CPP plugin. Building requires the .NET 8 SDK and a game installation with BepInEx. Start the game once after installing BepInEx to generate the IL2CPP interop assemblies. These assemblies come from the game and are not included in this repository.
 
 ```
 dotnet build src/Greenline.csproj -c Release
 ```
 
-`Directory.Build.props` sets `GameDir` to the default Steam install path. If the game is in another place, override it without an edit of the file: set a `GameDir` environment variable, or pass `-p:GameDir=...` on the build. The output DLL is at `src\bin\Release\Greenline.dll`.
+`Directory.Build.props` sets `GameDir` to the default Steam installation path. For another location, set the `GameDir` environment variable or pass `-p:GameDir=...` to the build command. The output DLL is `src\bin\Release\Greenline.dll`.
 
-The grid layout, the badges, the hover rules, the JSON for the pages, the replant decision, the fertilizer choice, the reason line, and the save key move are game-free code (the `*Logic.cs` files, `src/Web/PageJson.cs`, and `src/Web/PageIncludes.cs`) with unit tests that do not need the game:
+Unit tests cover grid layout, badges, hover rules, page JSON, replant decisions, fertilizer selection, reason messages, save key migration, and opacity. The tested code has no game dependencies. It lives in the `*Logic.cs` files, `src/Web/PageJson.cs`, `src/Web/PageIncludes.cs`, and `src/Web/PageStyle.cs`.
 
 ```
 dotnet test tests/Greenline.Tests
 ```
 
-The page scripts `src/Web/page.js` (the grid and the pot card, joined from the files of `src/Web/page/`) and `src/Web/plantpanel.js` (the pot option checkboxes and the reason line) have their own tests, which run them against the real `CoreUI1.html`, `PlantPanel.html`, and `PlantingDetails.html` of the installed game (Node with jsdom). Run them after a game update. They need the game install, and `SL_GAME_DIR` overrides the default Steam path. `npm run lint` checks the CSS files:
+The page scripts have separate tests that use Node and jsdom. `src/Web/page.js` combines the files in `src/Web/page/` for the grid and pot card. `src/Web/plantpanel.js` controls the pot settings and reason message.
+
+These tests use `CoreUI1.html`, `PlantPanel.html`, and `PlantingDetails.html` from the installed game. Run them after a game update. Set `SL_GAME_DIR` if the game uses another installation path. The lint command checks the CSS files.
 
 ```
 cd tests/page
@@ -82,7 +103,7 @@ npm run lint
 
 ## Package
 
-Add `-p:Package=true` to a Release build to also write the ready-to-install zip at `dist\Greenline-<version>.zip`, laid out as `BepInEx\plugins\Greenline.dll` so a user extracts it at the game root. A plain build skips this step.
+Add `-p:Package=true` to a Release build to create `dist\Greenline-<version>.zip`. The zip contains `BepInEx\plugins\Greenline.dll`, ready to extract into the game folder. A plain build does not create the zip.
 
 ```
 dotnet build src/Greenline.csproj -c Release -p:Package=true

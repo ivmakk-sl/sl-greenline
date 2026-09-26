@@ -15,6 +15,7 @@
     <Compile Include="..\..\src\PotOptions\SaveKeyLogic.cs" Link="SaveKeyLogic.cs" />
     <Compile Include="..\..\src\Web\PageJson.cs" Link="PageJson.cs" />
     <Compile Include="..\..\src\Web\PageIncludes.cs" Link="PageIncludes.cs" />
+    <Compile Include="..\..\src\Web\PageStyle.cs" Link="PageStyle.cs" />
     <None Include="..\fixtures\pots.json" Link="fixtures\pots.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
