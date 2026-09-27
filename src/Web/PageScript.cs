@@ -34,6 +34,8 @@ namespace Greenline
         // browser crash drops the result.
         private const float FullSendWaitSeconds = 5f;
         private static float fullSendAt = float.NegativeInfinity;
+        // The number of the last full send: only its result opens the gate, not a late one of an older send.
+        private static int fullSendId;
 
         // Sends the pot data alone when the root page has the page script, and the script with the pot data
         // when it does not (a new root page). setPots applies the grid once when the CoreUI1 frame is
@@ -77,10 +79,11 @@ namespace Greenline
                 return;
             }
             fullSendAt = now;
+            int id = ++fullSendId;
             if (Plugin.Verbose.Value) Plugin.Log.LogDebug("Greenline page script: sent");
             webView.ExecuteJavaScript(PageJson.SetPotsWithScriptCommand(Script(), json), (Il2CppSystem.Action<string>)(r =>
             {
-                fullSendAt = float.NegativeInfinity;
+                if (id == fullSendId) fullSendAt = float.NegativeInfinity;
                 OnSetPotsResult(r);
             }));
         }
