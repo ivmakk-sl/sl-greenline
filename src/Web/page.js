@@ -16,5 +16,5 @@ window.__greenline = window.__greenline || (function () {
   // @include pointer.js
   // @include install.js
 
-  return { install: install, setPots: setPots, setHover: setHover, step: step, word: word, shortTime: shortTime, fullTime: fullTime };
+  return { install: install, setPots: setPots, setHover: setHover, check: check, step: step, word: word, shortTime: shortTime, fullTime: fullTime };
 })();

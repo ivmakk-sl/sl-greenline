@@ -22,6 +22,12 @@ public class PageCommandTests
     }
 
     [Fact]
+    public void The_check_command_calls_check_or_gives_no_script()
+    {
+        Assert.Equal("window.__greenline?window.__greenline.check():'no script'", PageJson.CheckCommand);
+    }
+
+    [Fact]
     public void The_full_command_is_the_script_then_the_pot_data()
     {
         string js = PageJson.SetPotsWithScriptCommand(Script, Json);

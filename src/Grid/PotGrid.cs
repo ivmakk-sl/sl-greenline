@@ -54,7 +54,11 @@ namespace Greenline
                 var config = ConfigManager.Instance;
                 foreach (var floor in floors) floor.Label = FloorLabel(config, floor.Floor);
                 string json = GridLogic.ToJson(Lang(), GreenWords.Current(), floors, pots, Patrol.Available(), Patrol.PendingChores());
-                if (json == lastJson) return;
+                if (json == lastJson)
+                {
+                    PageScript.Check();
+                    return;
+                }
                 lastJson = json;
                 Push(json, floors, pots);
             }

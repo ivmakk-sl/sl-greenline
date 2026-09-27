@@ -493,6 +493,16 @@ if (!gameFileExists) {
     assert.equal(timeText(doc, 1001), '2:07');
   });
 
+  test('jsdom: check() is ok on an applied frame, and not applied on a frame the game built again', async (t) => {
+    const { root } = await setup(t);
+    assert.equal(root.__greenline.check(), 'ok');
+
+    const rebuilt = await loadCoreWindow(t);
+    const fresh = makeRootWindow(t, rebuilt);
+    runPageJs(fresh, '0');
+    assert.equal(fresh.__greenline.check(), 'not applied');
+  });
+
   test('jsdom: the mod registers no requestAnimationFrame callback', async (t) => {
     const core = await loadCoreWindow(t);
     await postPlants(core, FIXTURE_ROWS);

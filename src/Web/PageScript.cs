@@ -53,6 +53,20 @@ namespace Greenline
             }));
         }
 
+        // A browser crash or a frame built again drops the grid while the pot data stays the same, so no
+        // push would come; a result other than "ok" makes the next check of PotGrid push again.
+        public static void Check()
+        {
+            var webView = ReduxUISystem.Instance?.GetWebUILayer()?.canvasWebViewPrefab?.WebView;
+            if (webView == null) return;
+            webView.ExecuteJavaScript(PageJson.CheckCommand, (Il2CppSystem.Action<string>)(r =>
+            {
+                if (r == "ok") return;
+                PotGrid.ForgetLastPush();
+                if (Plugin.Verbose.Value) Plugin.Log.LogDebug($"Greenline page check: {r}");
+            }));
+        }
+
         private static void SendWithScript(string json)
         {
             var webView = ReduxUISystem.Instance?.GetWebUILayer()?.canvasWebViewPrefab?.WebView;

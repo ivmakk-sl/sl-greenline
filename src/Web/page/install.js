@@ -100,6 +100,13 @@
 
   function install() { return attempt(10); }
 
+  // Whether the grid is still on the CoreUI1 frame: a frame that the game built again has no observer.
+  function check() {
+    var w = findFrame();
+    if (!w) return 'no CoreUI1 frame';
+    return w.__greenlineObserver ? 'ok' : 'not applied';
+  }
+
   function setPots(data) {
     potsData = data || null;
     var w = findFrame();
