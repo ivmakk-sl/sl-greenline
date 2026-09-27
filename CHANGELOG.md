@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- Much less work for the game's UI browser, which matters in long play sessions. The mod sends its page script to the UI once, not with each update, and it sends the pot data only when a pot changes, not each second. The countdowns and the hover card update 4 times each second, not on each frame. The grid and the card look and work as before.
+- Greenline reduces repeated work in the game's web UI during play. It sends its web page script only when the web page needs it, instead of with every pot update. It no longer resends pot data each second just because a crop with no problem gets closer to maturity. The countdowns and the pot card update four times per second instead of every frame. The pot grid and the pot card keep the same appearance and controls.
 
 ## [1.0.0] - 2026-09-26
 
