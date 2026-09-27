@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-09-27
+
+### Fixed
+
+- Much less work for the game's UI browser, which matters in long play sessions. The mod sends its page script to the UI once, not with each update, and it sends the pot data only when a pot changes, not each second. The countdowns and the hover card update 4 times each second, not on each frame. The grid and the card look and work as before.
+
 ## [1.0.0] - 2026-09-26
 
 ### Added

@@ -152,7 +152,9 @@ namespace Greenline
                     .Append(",\"cropSize\":").Append(p.CropSize)
                     .Append(",\"problems\":[").Append(string.Join(",", problems)).Append(']')
                     .Append(",\"badge\":").Append(PageJson.Str(Badge(p.Flags, p.State)))
-                    .Append(",\"growRemainSeconds\":").Append(p.GrowRemainSeconds)
+                    // The card reads the time to mature of a crop with no problem from the game row, which
+                    // the game counts down itself, so the data does not change while such a crop grows.
+                    .Append(",\"growRemainSeconds\":").Append(problems.Any() ? p.GrowRemainSeconds : 0)
                     .Append(",\"growTotalSeconds\":").Append(p.GrowTotalSeconds)
                     .Append(",\"fertName\":").Append(PageJson.Str(p.FertName))
                     .Append(",\"fertIcon\":").Append(PageJson.Str(p.FertIcon))

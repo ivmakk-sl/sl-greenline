@@ -30,6 +30,18 @@ namespace Greenline
             return sb.ToString();
         }
 
+        // The result of SetPotsCommand when the root page has no page script: a new root page, or one
+        // that the game built again after a browser crash.
+        public const string NoScript = "no script";
+
+        // The push of the pot data when the page script is already in the root page.
+        public static string SetPotsCommand(string json) =>
+            "window.__greenline?window.__greenline.setPots(" + json + "):'" + NoScript + "'";
+
+        // The page script, then the push of the pot data: sent only when SetPotsCommand gave NoScript.
+        public static string SetPotsWithScriptCommand(string script, string json) =>
+            script + ";window.__greenline.setPots(" + json + ");";
+
         private static readonly Regex PotPattern = new Regex("\"pot\"\\s*:\\s*\"(\\d+)\"");
         private static readonly Regex KeyPattern = new Regex("\"key\"\\s*:\\s*\"(replant|fert)\"");
         private static readonly Regex OnPattern = new Regex("\"on\"\\s*:\\s*(true|false)");

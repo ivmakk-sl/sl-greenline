@@ -1,0 +1,2 @@
+v1.0.1 - 2026-09-27
+Fixed: Much less work for the game's UI browser in long play sessions. The mod now updates the UI only when a pot changes, not each second. The grid and the pot card look and work as before.
