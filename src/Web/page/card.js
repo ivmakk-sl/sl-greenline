@@ -39,8 +39,8 @@
 
   // The hover card: a header with the crop (or the pot) and the pot under it, then key rows.
   // Each row is { key, icon, text, cls, bar }; a bar is { fill (0..1), kind, text, pause }. The game
-  // row gives the live times (the decay of Pest and Frost, the harvest window); the pot data gives the
-  // growth time.
+  // row gives the live times (the decay of Pest and Frost, the harvest window, and the growth time of a
+  // crop with no problem); the pot data gives the still growth time of a crop with a problem.
   function cardModel(pot, row, state) {
     var lang = potsData.lang;
     var status = row ? row.status : -1;
@@ -73,8 +73,13 @@
       });
     }
 
-    if (pot.state === 'growing' && pot.growTotalSeconds > 0) {
-      var left = pot.growRemainSeconds || 0;
+    // The growth time runs from the game row only while the pot data and the row both say the crop has
+    // no problem. With a problem in the pot data, the still time of the pot data shows; with no problem
+    // in the pot data but a problem in the row (the next push brings it), no bar shows.
+    var left = -1;
+    if (problems.length) left = pot.growRemainSeconds || 0;
+    else if (status === 0) left = remain;
+    if (pot.state === 'growing' && pot.growTotalSeconds > 0 && left >= 0) {
       rows.push({
         key: word('labelGrowth'),
         bar: {

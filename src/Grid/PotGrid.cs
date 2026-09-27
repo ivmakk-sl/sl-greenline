@@ -10,8 +10,9 @@ namespace Greenline
 {
     // Scans the pots and pushes the grid data. A trigger only sets the dirty flag, and FramePatch drains
     // it at most once each frame. A check each real second also covers the pot changes that send no HUD
-    // message (a Till, a placed or removed pot, the time to mature). A push happens only when the JSON
-    // differs from the last one.
+    // message (a Till, a placed or removed pot, a new problem, the time to mature of a crop with a
+    // problem). A push happens only when the JSON differs from the last one. The JSON has no time to
+    // mature for a crop with no problem, so it does not change while such a crop grows.
     internal static class PotGrid
     {
         private const float CheckSeconds = 1f;
@@ -53,7 +54,11 @@ namespace Greenline
                 var config = ConfigManager.Instance;
                 foreach (var floor in floors) floor.Label = FloorLabel(config, floor.Floor);
                 string json = GridLogic.ToJson(Lang(), GreenWords.Current(), floors, pots, Patrol.Available(), Patrol.PendingChores());
-                if (json == lastJson) return;
+                if (json == lastJson)
+                {
+                    PageScript.Check();
+                    return;
+                }
                 lastJson = json;
                 Push(json, floors, pots);
             }

@@ -68,6 +68,40 @@ public class ToJsonTests
         Assert.True(JsonNode.DeepEquals(expected, actual), json);
     }
 
+    private static JsonNode GrowthOf(int flags, int remain)
+    {
+        var pot = Empty(1, 5001, "Large Planter", Large, 4, GridLogic.PotState.Growing);
+        pot.Flags = flags;
+        pot.GrowRemainSeconds = remain;
+        pot.GrowTotalSeconds = 211920;
+        var floors = new List<GridLogic.FloorLine> { new GridLogic.FloorLine { Floor = 1, Label = "Home", Pots = new List<long> { 1 } } };
+        return JsonNode.Parse(GridLogic.ToJson("en", FixtureWords(), floors, new[] { pot }, false, 0))["pots"]["1"];
+    }
+
+    [Fact]
+    public void ToJson_writes_no_time_to_mature_for_a_growing_crop_with_no_problem()
+    {
+        var pot = GrowthOf(0, 105960);
+
+        Assert.Equal(0, pot["growRemainSeconds"].GetValue<int>());
+        Assert.Equal(211920, pot["growTotalSeconds"].GetValue<int>());
+    }
+
+    [Fact]
+    public void ToJson_writes_the_time_to_mature_for_a_growing_crop_with_a_problem()
+    {
+        var pot = GrowthOf(GridLogic.Drought, 105960);
+
+        Assert.Equal(105960, pot["growRemainSeconds"].GetValue<int>());
+        Assert.Equal(211920, pot["growTotalSeconds"].GetValue<int>());
+    }
+
+    [Fact]
+    public void ToJson_is_the_same_while_a_crop_with_no_problem_grows()
+    {
+        Assert.True(JsonNode.DeepEquals(GrowthOf(0, 105960), GrowthOf(0, 105720)));
+    }
+
     [Fact]
     public void ToJson_escapes_a_quote_a_backslash_and_a_line_break_in_a_name()
     {

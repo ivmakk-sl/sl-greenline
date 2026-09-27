@@ -1,0 +1,2 @@
+v1.0.1 - 2026-09-27
+Fixed: Greenline reduces repeated work in the game's interface during play. The countdowns and the pot card update four times per second instead of every frame. The pot grid and the pot card keep the same appearance and controls.

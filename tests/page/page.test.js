@@ -471,17 +471,53 @@ if (!gameFileExists) {
   }
 
   test('jsdom: a cell shows the countdown of its game row, only for a status with a countdown', async (t) => {
-    const { doc, core } = await setup(t);
+    const { doc, core, root } = await setup(t);
 
     setRemain(core, 5001, 5 * 3600 + 6 * 60 + 30);
     setRemain(core, 5002, 45 * 60 + 30);
-    await wait(core, 60);
+    root.__greenline.step();
 
     assert.equal(timeText(doc, 1001), '5:06');
     assert.equal(timeText(doc, 1002), '45m');
     assert.equal(timeText(doc, 1003), null, 'an empty pot has no countdown');
     assert.equal(timeText(doc, 1004), null, 'a withered crop has no countdown');
     assert.equal(timeText(doc, 1005), null, 'a Poor pot has no countdown');
+  });
+
+  test('jsdom: step() writes the countdown of a cell from its game row', async (t) => {
+    const { doc, core, root } = await setup(t);
+
+    setRemain(core, 5001, 2 * 3600 + 7 * 60 + 30);
+    root.__greenline.step();
+
+    assert.equal(timeText(doc, 1001), '2:07');
+  });
+
+  test('jsdom: check() is ok on an applied frame, and not applied on a frame the game built again', async (t) => {
+    const { root } = await setup(t);
+    assert.equal(root.__greenline.check(), 'ok');
+
+    const rebuilt = await loadCoreWindow(t);
+    const fresh = makeRootWindow(t, rebuilt);
+    runPageJs(fresh, '0');
+    assert.equal(fresh.__greenline.check(), 'not applied');
+  });
+
+  test('jsdom: the mod registers no requestAnimationFrame callback', async (t) => {
+    const core = await loadCoreWindow(t);
+    await postPlants(core, FIXTURE_ROWS);
+    await expand(core);
+    const modCallbacks = [];
+    const raf = core.requestAnimationFrame.bind(core);
+    core.requestAnimationFrame = (cb) => {
+      if (/updateCountdowns/.test(String(cb))) modCallbacks.push(cb);
+      return raf(cb);
+    };
+
+    setPots(makeRootWindow(t, core), fixture());
+    await wait(core, 60);
+
+    assert.equal(modCallbacks.length, 0);
   });
 
   test('jsdom: a stalled crop (status 6) shows no countdown', async (t) => {
@@ -492,19 +528,22 @@ if (!gameFileExists) {
   });
 
   test('jsdom: the countdown writes its text only when the text changes', async (t) => {
-    const { doc, core } = await setup(t);
+    const { doc, core, root } = await setup(t);
     setRemain(core, 5001, 5 * 3600 + 6 * 60 + 50);
-    await wait(core, 60);
+    root.__greenline.step();
     const time = cell(doc, 1001).querySelector('.greenline-time');
 
     const records = [];
     const observer = new core.MutationObserver((list) => records.push(...list));
     observer.observe(time, { childList: true, subtree: true, characterData: true });
-    await wait(core, 100);
-    assert.equal(records.length, 0, 'frames in the same minute wrote the text');
+    root.__greenline.step();
+    root.__greenline.step();
+    await wait(core, 0);
+    assert.equal(records.length, 0, 'steps in the same minute wrote the text');
 
     setRemain(core, 5001, 5 * 3600 + 5 * 60 + 10);
-    await wait(core, 60);
+    root.__greenline.step();
+    await wait(core, 0);
     observer.disconnect();
     assert.equal(timeText(doc, 1001), '5:05');
     assert.equal(records.length, 1);
@@ -610,7 +649,8 @@ if (!gameFileExists) {
     const data = fixture();
     data.pots['1001'].problems = [];
     data.pots['1001'].badge = '';
-    const { doc } = await setup(t, { pots: data, rows: [plant(5001, 0, 7200, 0), plant(5002, 1, 3600, 0), plant(5004, 2)] });
+    const { doc, core } = await setup(t, { pots: data, rows: [plant(5001, 0, 7200, 0), plant(5002, 1, 3600, 0), plant(5004, 2)] });
+    setRemain(core, 5001, 105960);
     const c = card(doc, 1001);
 
     const state = rowWith(c, 'State');
@@ -618,6 +658,55 @@ if (!gameFileExists) {
     assert.ok(!state.classes.includes('greenline-red') && !state.classes.includes('greenline-gold'));
     assert.deepEqual(rowWith(c, 'Growth').bar, { fill: '50%', kind: [], pause: false });
   });
+
+  // The pot data of a growing crop with no problem, as C# sends it: no time to mature.
+  function noProblemData() {
+    const data = fixture();
+    data.pots['1001'].problems = [];
+    data.pots['1001'].badge = '';
+    data.pots['1001'].growRemainSeconds = 0;
+    return data;
+  }
+
+  test('jsdom: the growth bar of a crop with no problem follows the countdown of its game row, with no new pot data', async (t) => {
+    const { doc, core } = await setup(t, { pots: noProblemData(), rows: [plant(5001, 0, 7200, 0), plant(5002, 1, 3600, 0), plant(5004, 2)] });
+
+    setRemain(core, 5001, 105960);
+    let growth = rowWith(card(doc, 1001), 'Growth');
+    assert.deepEqual(growth.bar, { fill: '50%', kind: [], pause: false });
+    assert.equal(growth.text, '1 d 5 h');
+
+    setRemain(core, 5001, 14 * 3600 + 43 * 60 + 30);
+    growth = rowWith(card(doc, 1001), 'Growth');
+    assert.deepEqual(growth.bar, { fill: '75%', kind: [], pause: false });
+    assert.equal(growth.text, '14 h 43 min');
+  });
+
+  for (const status of [0, 3, 5]) {
+    test(`jsdom: the growth bar of a crop with a problem in the pot data stays still with a game row of status ${status}`, async (t) => {
+      const { doc, core } = await setup(t, { rows: [plant(5001, status, 7200, 0), plant(5002, 1, 3600, 0), plant(5004, 2)] });
+
+      setRemain(core, 5001, 3000);
+      const before = rowWith(card(doc, 1001), 'Growth');
+      assert.deepEqual(before.bar, { fill: '50%', kind: ['greenline-stalled'], pause: true });
+      assert.equal(before.text, '1 d 5 h');
+
+      setRemain(core, 5001, 1000);
+      assert.deepEqual(rowWith(card(doc, 1001), 'Growth'), before);
+    });
+  }
+
+  for (const [name, rows] of [
+    ['a game row of status 3', [plant(5001, 3, 7200, 0), plant(5002, 1, 3600, 0), plant(5004, 2)]],
+    ['a game row of status 5', [plant(5001, 5, 7200, 0), plant(5002, 1, 3600, 0), plant(5004, 2)]],
+    ['no game row', [plant(5002, 1, 3600, 0), plant(5004, 2)]]
+  ]) {
+    test(`jsdom: a crop with no problem in the pot data but ${name} has no growth bar`, async (t) => {
+      const { doc } = await setup(t, { pots: noProblemData(), rows });
+
+      assert.equal(rowsWith(card(doc, 1001), 'Growth').length, 0);
+    });
+  }
 
   test('jsdom: the fertilizer row has the icon and name, or a grey None with no icon, then the auto value', async (t) => {
     const { doc } = await setup(t);
@@ -809,9 +898,10 @@ if (!gameFileExists) {
   function replantLine(doc) { return doc.querySelector('.mature-popover .greenline-replant'); }
 
   test('jsdom: the Auto-replant line is the last grid line and shows the game value', async (t) => {
-    const { doc, core } = await setup(t);
+    const { doc, core, root } = await setup(t);
     await postPatrol(core, true, true);
     await wait(core, 30);
+    root.__greenline.step();
 
     const line = replantLine(doc);
     assert.ok(line, 'no Auto-replant line');
@@ -824,6 +914,7 @@ if (!gameFileExists) {
 
     await postPatrol(core, true, false);
     await wait(core, 30);
+    root.__greenline.step();
     assert.equal(line.querySelector('input[type=checkbox]').checked, false);
   });
 

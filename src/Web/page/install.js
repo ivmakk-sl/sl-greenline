@@ -51,17 +51,30 @@
       w.__greenlineObserver = observer;
     }
 
-    // The page's state is one const object for the life of the window, so the frame step keeps it.
+    // The page's state is one const object for the life of the window, so the step keeps it. The shown
+    // times change at most once each game minute, so 4 steps each second are enough; each part returns
+    // at once while nothing of the mod shows.
     if (!w.__greenlineTick) {
       w.__greenlineTick = true;
-      var tick = function () {
-        w.requestAnimationFrame(tick);
-        try { updateCountdowns(doc, state); updateReplant(doc, state); updateHover(doc, state); } catch (e) { /* reported by the next install() or setPots() */ }
-      };
-      w.requestAnimationFrame(tick);
+      w.setInterval(function () {
+        try { stepFrame(doc, state); } catch (e) { /* reported by the next install() or setPots() */ }
+      }, 250);
     }
 
     return missing.length ? ('installed; missing: ' + missing.join(', ')) : 'installed';
+  }
+
+  // The countdowns of the cells, the Auto-replant value, and the hover card, from the game state.
+  function stepFrame(doc, state) {
+    updateCountdowns(doc, state);
+    updateReplant(doc, state);
+    updateHover(doc, state);
+  }
+
+  // One step on the CoreUI1 frame, for the page tests.
+  function step() {
+    var w = findFrame();
+    if (w) stepFrame(w.document, w.eval('state'));
   }
 
   function findFrame() {
@@ -86,6 +99,13 @@
   }
 
   function install() { return attempt(10); }
+
+  // Whether the grid is still on the CoreUI1 frame: a frame that the game built again has no observer.
+  function check() {
+    var w = findFrame();
+    if (!w) return 'no CoreUI1 frame';
+    return w.__greenlineObserver ? 'ok' : 'not applied';
+  }
 
   function setPots(data) {
     potsData = data || null;

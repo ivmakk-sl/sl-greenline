@@ -30,8 +30,16 @@ namespace Greenline
                 return reader.ReadToEnd();
         }
 
-        // Sends the pot data, then install(): setPots applies the grid when the CoreUI1 frame is
-        // there, and install() retries for a short time when it is not there yet.
+        // A full send whose result has not come back yet blocks a second one, for at most this long: a
+        // browser crash drops the result.
+        private const float FullSendWaitSeconds = 5f;
+        private static float fullSendAt = float.NegativeInfinity;
+        // The number of the last full send: only its result opens the gate, not a late one of an older send.
+        private static int fullSendId;
+
+        // Sends the pot data alone when the root page has the page script, and the script with the pot data
+        // when it does not (a new root page). setPots applies the grid once when the CoreUI1 frame is
+        // there; when it is not, the next check of PotGrid sends again.
         public static void SetPots(string json)
         {
             var webView = ReduxUISystem.Instance?.GetWebUILayer()?.canvasWebViewPrefab?.WebView;
@@ -40,13 +48,51 @@ namespace Greenline
                 PotGrid.ForgetLastPush();
                 return;
             }
-            string js = Script() + ";window.__greenline.setPots(" + json + ");window.__greenline.install();";
-            webView.ExecuteJavaScript(js, (Il2CppSystem.Action<string>)(r =>
+            webView.ExecuteJavaScript(PageJson.SetPotsCommand(json), (Il2CppSystem.Action<string>)(r =>
             {
-                if (r == "no CoreUI1 frame") PotGrid.ForgetLastPush();
-                LogPageCheck(r);
-                if (Plugin.Verbose.Value) Plugin.Log.LogDebug($"Greenline page script: {r}");
+                if (r == PageJson.NoScript) SendWithScript(json);
+                else OnSetPotsResult(r);
             }));
+        }
+
+        // A browser crash or a frame built again drops the grid while the pot data stays the same, so no
+        // push would come; a result other than "ok" makes the next check of PotGrid push again.
+        public static void Check()
+        {
+            var webView = ReduxUISystem.Instance?.GetWebUILayer()?.canvasWebViewPrefab?.WebView;
+            if (webView == null) return;
+            webView.ExecuteJavaScript(PageJson.CheckCommand, (Il2CppSystem.Action<string>)(r =>
+            {
+                if (r == "ok") return;
+                PotGrid.ForgetLastPush();
+                if (Plugin.Verbose.Value) Plugin.Log.LogDebug($"Greenline page check: {r}");
+            }));
+        }
+
+        private static void SendWithScript(string json)
+        {
+            var webView = ReduxUISystem.Instance?.GetWebUILayer()?.canvasWebViewPrefab?.WebView;
+            float now = UnityEngine.Time.realtimeSinceStartup;
+            if (webView == null || now - fullSendAt < FullSendWaitSeconds)
+            {
+                PotGrid.ForgetLastPush();
+                return;
+            }
+            fullSendAt = now;
+            int id = ++fullSendId;
+            if (Plugin.Verbose.Value) Plugin.Log.LogDebug("Greenline page script: sent");
+            webView.ExecuteJavaScript(PageJson.SetPotsWithScriptCommand(Script(), json), (Il2CppSystem.Action<string>)(r =>
+            {
+                if (id == fullSendId) fullSendAt = float.NegativeInfinity;
+                OnSetPotsResult(r);
+            }));
+        }
+
+        private static void OnSetPotsResult(string r)
+        {
+            if (r == "no CoreUI1 frame") PotGrid.ForgetLastPush();
+            LogPageCheck(r);
+            if (Plugin.Verbose.Value) Plugin.Log.LogDebug($"Greenline page script: {r}");
         }
 
         // The pot under the pointer in the game world, or 0. page.js is already in the root page once the
