@@ -34,7 +34,7 @@ public class GridLogicTests
     }
 
     // The PlantAnomaly bits of the game.
-    private const int Pest = 1, Weed = 2, Drought = 4, LightLow = 8, LightHigh = 16, Frost = 32;
+    private const int Pest = 1, Weed = 2, Drought = 4, LightLow = 8, LightHigh = 16, Frost = 32, NeedFert = 256;
 
     [Fact]
     public void Badge_of_a_crop_with_Pest_is_pest()
@@ -51,6 +51,10 @@ public class GridLogicTests
     [InlineData(Weed | LightLow, "weed")]
     [InlineData(Weed, "weed")]
     [InlineData(LightLow, "lightLow")]
+    [InlineData(NeedFert, "needFert")]
+    [InlineData(NeedFert | LightLow, "lightLow")]
+    [InlineData(NeedFert | Weed, "weed")]
+    [InlineData(NeedFert | Pest, "pest")]
     [InlineData(LightHigh, "")]
     [InlineData(0, "")]
     public void Badge_of_a_growing_crop_is_its_most_urgent_problem(int flags, string badge)
@@ -82,6 +86,22 @@ public class GridLogicTests
     public void Time_to_mature_is_the_remaining_time_with_no_problem_or_no_stall_start(int flags, int stallStart)
     {
         Assert.Equal(300, GridLogic.TimeToMature(300, flags, stallStart, 1000));
+    }
+
+    [Fact]
+    public void Fert_dose_of_a_part_dose_is_the_count_over_the_pot_size()
+    {
+        Assert.Equal("1/4", GridLogic.FertDose(15503, 3, 4));
+    }
+
+    [Theory]
+    [InlineData(0, 3, 4)]
+    [InlineData(15503, 0, 4)]
+    [InlineData(15503, 4, 4)]
+    [InlineData(15503, 5, 4)]
+    public void Fert_dose_is_empty_with_no_fertilizer_or_a_full_dose(int fertItem, int fertMissing, int potSize)
+    {
+        Assert.Equal("", GridLogic.FertDose(fertItem, fertMissing, potSize));
     }
 
     [Fact]

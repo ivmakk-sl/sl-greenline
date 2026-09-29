@@ -408,6 +408,47 @@ if (!gameFileExists) {
     assert.equal(cell(doc, 1001).querySelector(':scope > .greenline-pause'), null, 'a Pest crop has no pause mark');
   });
 
+  const BASIC_FERT_ICON = '../../Res/Material/UI_Item_Icon_Mat_S_1500710801.png';
+  const BADGE_ICONS_OF = { pest: '../../Res/PlantAnomaly/Pest.png', frost: '../../Res/PlantAnomaly/Frost.png' };
+
+  // A growing research crop in pot 1002 with its problems, and its game row with the status.
+  function researchData(problems) {
+    const data = fixture();
+    const pot = data.pots['1002'];
+    pot.state = 'growing';
+    pot.neverWithers = true;
+    pot.problems = problems;
+    pot.badge = problems[0] || '';
+    pot.growRemainSeconds = 105960;
+    pot.growTotalSeconds = 211920;
+    return data;
+  }
+
+  test('jsdom: a research crop that needs fertilizer has the Basic Fertilizer badge, the pause mark, and the red border', async (t) => {
+    const { doc, core } = await setup(t, { pots: researchData(['needFert']), rows: [plant(5001, 3, 7200, 0), plant(5002, 8, 3600, 0), plant(5004, 2)] });
+    await wait(core, 60);
+
+    assert.equal(iconSrc(cell(doc, 1002), '.greenline-badge'), BASIC_FERT_ICON);
+    assert.equal(cell(doc, 1002).querySelectorAll(':scope > .greenline-pause i').length, 2);
+    assert.equal(timeText(doc, 1002), null);
+    assert.ok(cell(doc, 1002).classList.contains('greenline-problem'));
+    assert.ok(!cell(doc, 1002).classList.contains('greenline-urgent'));
+  });
+
+  for (const [problem, status] of [['pest', 9], ['frost', 10]]) {
+    test(`jsdom: a research crop with ${problem} has its badge, the pause mark, and the red border, and is not urgent`, async (t) => {
+      const { doc, core } = await setup(t, { pots: researchData([problem]), rows: [plant(5001, 3, 7200, 0), plant(5002, status, 3600, 0), plant(5004, 2)] });
+      await wait(core, 60);
+
+      assert.equal(iconSrc(cell(doc, 1002), '.greenline-badge'), BADGE_ICONS_OF[problem]);
+      assert.equal(cell(doc, 1002).querySelectorAll(':scope > .greenline-pause i').length, 2);
+      assert.equal(timeText(doc, 1002), null);
+      assert.ok(cell(doc, 1002).classList.contains('greenline-problem'));
+      assert.ok(!cell(doc, 1002).classList.contains('greenline-urgent'));
+      assert.ok(cell(doc, 1001).classList.contains('greenline-urgent'), 'a Pest crop that is not a research crop stays urgent');
+    });
+  }
+
   test('jsdom: a cell shows no crop name', async (t) => {
     const { doc } = await setup(t);
 
@@ -723,6 +764,36 @@ if (!gameFileExists) {
     assert.deepEqual(parts(1002), [['None', true], ['(auto: off)', true]], 'None and auto off are grey');
   });
 
+  test('jsdom: the fertilizer row shows the dose of a part dose after the name, and no dose for a full dose', async (t) => {
+    const data = fixture();
+    data.pots['1001'].fertDose = '1/4';
+    const { doc } = await setup(t, { pots: data });
+
+    const parts = () => [...hoverNode(doc).querySelectorAll('.greenline-card-row .greenline-card-value > span')]
+      .map((e) => [e.className, e.textContent]).filter(([cls]) => /greenline-fert/.test(cls));
+
+    card(doc, 1001);
+    assert.deepEqual(parts(), [
+      ['greenline-fert-name', 'Compound Fertilizer'], ['greenline-fert-dose', '1/4'], ['greenline-fert-auto', '(auto: on)']
+    ]);
+    card(doc, 1002);
+    assert.deepEqual(parts().map(([cls]) => cls), ['greenline-fert-name greenline-muted', 'greenline-fert-auto greenline-muted']);
+  });
+
+  test('jsdom: a long fertilizer name is cut with an ellipsis, and the dose and the auto value stay whole', async (t) => {
+    const data = fixture();
+    data.pots['1001'].fertDose = '1/4';
+    const { doc, core } = await setup(t, { pots: data });
+    card(doc, 1001);
+    const style = (sel) => core.getComputedStyle(hoverNode(doc).querySelector(sel));
+
+    assert.equal(style('.greenline-card-rows').gridTemplateColumns, 'auto minmax(0, 1fr)');
+    const name = style('.greenline-fert-name');
+    assert.deepEqual([name.minWidth, name.overflow, name.textOverflow], ['0px', 'hidden', 'ellipsis']);
+    assert.equal(style('.greenline-fert-dose').flexShrink, '0');
+    assert.equal(style('.greenline-fert-auto').flexShrink, '0');
+  });
+
   test('jsdom: the Auto-replant row is a white On or a grey Off', async (t) => {
     const { doc } = await setup(t);
 
@@ -749,6 +820,45 @@ if (!gameFileExists) {
     assert.deepEqual(harvest.bar.kind, ['greenline-ripe']);
     assert.ok(harvest.text.includes('45 min'));
     assert.equal(rowsWith(c, 'Growth').length, 0);
+  });
+
+  test('jsdom: the card of a research crop that needs fertilizer has a red State row with the Basic Fertilizer icon and no time', async (t) => {
+    const data = researchData(['needFert']);
+    data.words = { problemNeedFert: 'Stagnant: Needs Fertilizer' };
+    const { doc, core } = await setup(t, { pots: data, rows: [plant(5001, 3, 7200, 0), plant(5002, 8, 3600, 0), plant(5004, 2)] });
+    setRemain(core, 5002, 3600 + 5 * 60 + 50);
+    const c = card(doc, 1002);
+
+    const state = rowWith(c, 'State');
+    assert.equal(state.icon, BASIC_FERT_ICON);
+    assert.equal(state.text, 'Stagnant: Needs Fertilizer');
+    assert.ok(state.classes.includes('greenline-red'));
+    assert.deepEqual(rowWith(c, 'Growth').bar, { fill: '50%', kind: ['greenline-stalled'], pause: true });
+  });
+
+  test('jsdom: the card of a research crop with Pest has a red Pest State row with no time', async (t) => {
+    const { doc, core } = await setup(t, { pots: researchData(['pest']), rows: [plant(5001, 3, 7200, 0), plant(5002, 9, 3600, 0), plant(5004, 2)] });
+    setRemain(core, 5002, 3600 + 5 * 60 + 50);
+    const c = card(doc, 1002);
+
+    const state = rowWith(c, 'State');
+    assert.equal(state.text, 'Pest');
+    assert.ok(state.classes.includes('greenline-red'));
+  });
+
+  test('jsdom: a mature crop with no harvest window has the gold border and the gold State row, and no countdown or harvest bar', async (t) => {
+    const data = fixture();
+    data.pots['1002'].neverWithers = true;
+    const { doc, core, root } = await setup(t, { pots: data, rows: [plant(5001, 3, 7200, 0), plant(5002, 1, 0, 0), plant(5004, 2)] });
+    core.eval("state.i18n_plantHarvest = 'Harvest '");
+    setRemain(core, 5002, 45 * 60 + 30);
+    root.__greenline.step();
+
+    assert.ok(cell(doc, 1002).classList.contains('greenline-mature'));
+    assert.equal(timeText(doc, 1002), null);
+    const c = card(doc, 1002);
+    assert.ok(rowWith(c, 'State').classes.includes('greenline-gold'));
+    assert.equal(rowsWith(c, 'Harvest').length, 0);
   });
 
   test('jsdom: the card of an empty pot has the pot header, no State row, and no growth bar', async (t) => {
@@ -951,6 +1061,7 @@ if (!gameFileExists) {
 
     assert.equal(runPageJs(root, 'window.__greenline.word("stateGrowing")'), 'Growing');
     assert.equal(runPageJs(root, 'window.__greenline.word("problemDrought")'), 'Drought');
+    assert.equal(runPageJs(root, 'window.__greenline.word("problemNeedFert")'), 'Needs Fertilizer');
     assert.equal(runPageJs(root, 'window.__greenline.word("labelFertilizer")'), 'Fertilizer');
     setPots(root, Object.assign(fixture(), { words: { problemDrought: 'Dry' } }));
     assert.equal(runPageJs(root, 'window.__greenline.word("problemDrought")'), 'Dry');

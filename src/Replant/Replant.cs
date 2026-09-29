@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Il2CppInterop.Runtime;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
@@ -163,7 +164,7 @@ namespace Greenline
             {
                 pendingPot = potId;
                 pendingIndex = index;
-                pendingFert = PotOptions.Fert(potId) ? FertIndex(state, potId) : -1;
+                pendingFert = !PotOptions.Fert(potId) ? -1 : NoBaseFert(state, index, potId) ? -1 : FertIndex(state, potId);
                 pendingUntil = Time.realtimeSinceStartup + PendingSeconds;
                 if (pendingFert >= 0) Reducer_Web_PlantPanel.RecalcSelection(state, index, pendingFert);
                 return;
@@ -176,19 +177,41 @@ namespace Greenline
                 ReplantLogic.ReasonText(decision, ItemName(lastSeed), GreenWords.Dictionary()));
         }
 
-        // The window's index of the best fertilizer of which the containers have enough for the pot (its
-        // Capacity), or -1 with a pop text when none is enough.
+        // A seed that takes no fertilizer at planting (a research crop): the game drops its fertilizer, so
+        // the mod picks none and shows no pop text.
+        private static bool NoBaseFert(State_Web_PlantPanel state, int index, long potId)
+        {
+            var seed = state.Seeds[index];
+            if (!seed.NoBaseFert.Value) return false;
+            if (Plugin.Verbose.Value)
+                Plugin.Log.LogDebug($"Greenline replant: pot {potId} seed {seed.ItemConfigId.Value} no base fertilizer");
+            return true;
+        }
+
+        // The window's index of the fertilizer that gives the pot the largest speed bonus, a part dose
+        // included, or -1 with a pop text when the containers have no fertilizer.
         private static int FertIndex(State_Web_PlantPanel state, long potId)
         {
-            var pool = new Dictionary<int, int>();
+            var counts = new Dictionary<int, int>();
+            var speeds = new Dictionary<int, float>();
             for (int i = 0; i < state.Ferts.Count; i++)
             {
                 int item = state.Ferts[i].ItemConfigId.Value;
-                pool[item] = (pool.TryGetValue(item, out int n) ? n : 0) + state.Ferts[i].OwnedCount.Value;
+                counts[item] = (counts.TryGetValue(item, out int n) ? n : 0) + state.Ferts[i].OwnedCount.Value;
+                speeds[item] = state.Ferts[i].SpeedRate.Value;
             }
-            int need = state.Capacity.Value;
-            int pick = ReplantLogic.PickFertilizer(pool, need);
-            if (Plugin.Verbose.Value) Plugin.Log.LogDebug($"Greenline replant: pot {potId} fertilizer need {need}, picked {pick}");
+            var pool = new List<(int Item, int Count, float Speed)>();
+            foreach (var kv in counts) pool.Add((kv.Key, kv.Value, speeds[kv.Key]));
+            int size = state.Capacity.Value;
+            int pick = ReplantLogic.PickFertilizer(pool, size);
+            if (Plugin.Verbose.Value)
+            {
+                var parts = new List<string>();
+                foreach (var f in pool) parts.Add($"{f.Item}x{f.Count}@{f.Speed.ToString(CultureInfo.InvariantCulture)}");
+                int dose = pick == 0 ? 0 : Math.Min(counts[pick], size);
+                Plugin.Log.LogDebug($"Greenline replant: pot {potId} fertilizer size {size} pool {string.Join(",", parts)} " +
+                                    $"picked {pick} dose {dose}/{size}");
+            }
             if (pick == 0)
             {
                 var words = GreenWords.Dictionary();

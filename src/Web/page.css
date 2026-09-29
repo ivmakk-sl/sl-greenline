@@ -386,6 +386,19 @@
   color: var(--gl-muted);
 }
 
+/* The card stops at the max-width of the game's .entry-tip, so a long fertilizer name is cut with an
+   ellipsis, and the dose and the auto value stay whole. */
+.greenline-tip .greenline-fert-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.greenline-tip .greenline-fert-dose,
+.greenline-tip .greenline-fert-auto {
+  flex-shrink: 0;
+}
+
 /* Chinese full-width brackets carry their own space, so the auto value needs no gap. */
 .greenline-tip.greenline-zh .greenline-fert-auto {
   margin-left: -5px;
@@ -393,7 +406,7 @@
 
 .greenline-tip .greenline-card-rows {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   column-gap: 10px;
   row-gap: 3px;
   align-items: center;

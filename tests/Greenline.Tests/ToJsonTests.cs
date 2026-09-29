@@ -97,6 +97,46 @@ public class ToJsonTests
     }
 
     [Fact]
+    public void ToJson_lists_needFert_after_lightHigh()
+    {
+        var problems = GrowthOf(GridLogic.NeedFert | GridLogic.LightHigh | GridLogic.Pest, 105960)["problems"].AsArray();
+
+        Assert.Equal(new[] { "pest", "lightHigh", "needFert" }, problems.Select(p => p.GetValue<string>()));
+    }
+
+    [Fact]
+    public void ToJson_writes_the_time_to_mature_for_a_crop_that_needs_fertilizer()
+    {
+        Assert.Equal(105960, GrowthOf(GridLogic.NeedFert, 105960)["growRemainSeconds"].GetValue<int>());
+    }
+
+    [Fact]
+    public void ToJson_lists_no_problem_for_a_withered_crop_that_needs_fertilizer()
+    {
+        var pot = Empty(1, 5001, "Large Planter", Large, 4, GridLogic.PotState.Withered);
+        pot.Flags = GridLogic.NeedFert;
+        var floors = new List<GridLogic.FloorLine> { new GridLogic.FloorLine { Floor = 1, Label = "Home", Pots = new List<long> { 1 } } };
+
+        var json = JsonNode.Parse(GridLogic.ToJson("en", FixtureWords(), floors, new[] { pot }, false, 0))["pots"]["1"];
+
+        Assert.Empty(json["problems"].AsArray());
+    }
+
+    [Fact]
+    public void ToJson_writes_a_crop_that_never_withers_and_the_dose()
+    {
+        var pot = Empty(1, 5001, "Large Planter", Large, 4, GridLogic.PotState.Growing);
+        pot.NeverWithers = true;
+        pot.FertDose = "1/4";
+        var floors = new List<GridLogic.FloorLine> { new GridLogic.FloorLine { Floor = 1, Label = "Home", Pots = new List<long> { 1 } } };
+
+        var json = JsonNode.Parse(GridLogic.ToJson("en", FixtureWords(), floors, new[] { pot }, false, 0))["pots"]["1"];
+
+        Assert.True(json["neverWithers"].GetValue<bool>());
+        Assert.Equal("1/4", json["fertDose"].GetValue<string>());
+    }
+
+    [Fact]
     public void ToJson_is_the_same_while_a_crop_with_no_problem_grows()
     {
         Assert.True(JsonNode.DeepEquals(GrowthOf(0, 105960), GrowthOf(0, 105720)));

@@ -19,6 +19,7 @@
     problemLightHigh: 'Light Too Strong',
     problemWeed: 'Weed',
     problemDrought: 'Drought',
+    problemNeedFert: 'Needs Fertilizer',
     labelState: 'State',
     labelGrowth: 'Growth',
     labelHarvest: 'Harvest',
@@ -32,6 +33,10 @@
     autoReplant: 'Auto-replant',
     autoReplantTip: 'After a harvest, Tend All plants the same crop again, with no planting window.'
   };
+
+  // The item icon of Basic Fertilizer: the game has no icon for Needs Fertilizer, so the badge and the
+  // card line of that problem use it.
+  var FERT_ICON = '../../Res/Material/UI_Item_Icon_Mat_S_1500710801.png';
 
   // Set by setPots(); null until C# pushes pot data, and then the grid stays off.
   var potsData = null;
@@ -105,6 +110,12 @@
     return status === 0 || status === 1 || status === 3 || status === 4;
   }
 
+  // A mature crop with no harvest window (a research crop, harvestTotalSeconds 0): the game shows only
+  // the Harvest word, with no time.
+  function noHarvestWindow(row) {
+    return row.status === 1 && !(row.harvestTotalSeconds > 0);
+  }
+
   function rowsById(state) {
     var rows = {};
     var list = (state && state.maturePlants) || [];
@@ -135,14 +146,16 @@
     return pot.state === 'growing' || pot.state === 'mature' || pot.state === 'withered';
   }
 
+  // Pest or Frost kills the crop, except a research crop, which never withers.
   function isUrgent(pot) {
     var problems = pot.problems || [];
-    return hasCrop(pot) && pot.state !== 'withered'
+    return hasCrop(pot) && pot.state !== 'withered' && !pot.neverWithers
       && (problems.indexOf('pest') >= 0 || problems.indexOf('frost') >= 0);
   }
 
-  // A growing crop with a problem that only stops its growth (Weed, Drought, Low Light): the game
-  // keeps no timer for these, so the cell shows the pause mark in place of the countdown.
+  // A growing crop with a problem that only stops its growth (Weed, Drought, Low Light, Needs
+  // Fertilizer, and Pest or Frost of a research crop): the game keeps no timer for these, so the cell
+  // shows the pause mark in place of the countdown.
   function isStalled(pot) {
     return !!pot && pot.state === 'growing' && !!pot.badge && !isUrgent(pot);
   }

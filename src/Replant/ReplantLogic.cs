@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Greenline
@@ -66,17 +67,24 @@ namespace Greenline
             return string.Format(W("reasonPrefix"), reason);
         }
 
-        // The fertilizers from the best to the lowest: Premium Organic, Compound, Basic.
-        private static readonly int[] FertilizerOrder = { 15503, 15502, 15501 };
+        // Two speed bonuses closer than this are a tie.
+        private const float TieBonus = 0.0001f;
 
-        // The best fertilizer of which the pool (item id to count) has at least `need`, or 0. The game
-        // takes `need` (the pot Capacity) fertilizer with no stock check, so a short fertilizer is never
-        // picked.
-        public static int PickFertilizer(IDictionary<int, int> pool, int need)
+        // The fertilizer that gives the pot the largest speed bonus, or 0 when the pool has none. The game
+        // plants with a part dose: it takes min(Count, potSize) and gives Speed times that over potSize. A
+        // tie goes to the lower fertilizer (the lower Speed), which keeps the better one for another pot.
+        public static int PickFertilizer(IEnumerable<(int Item, int Count, float Speed)> ferts, int potSize)
         {
-            foreach (int item in FertilizerOrder)
-                if (pool.TryGetValue(item, out int count) && count >= need) return item;
-            return 0;
+            int best = 0;
+            float bestBonus = 0, bestSpeed = 0;
+            foreach (var (item, count, speed) in ferts)
+            {
+                if (count <= 0) continue;
+                float bonus = speed * Math.Min(count, potSize) / potSize;
+                bool tie = best != 0 && Math.Abs(bonus - bestBonus) < TieBonus;
+                if (tie ? speed < bestSpeed : bonus > bestBonus) { best = item; bestBonus = bonus; bestSpeed = speed; }
+            }
+            return best;
         }
     }
 }

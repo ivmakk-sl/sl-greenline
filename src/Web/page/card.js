@@ -5,9 +5,6 @@
   // The action icon of Plant (action 1610), for a growing crop.
   var GROWING_ICON = '../../Res/icon/icon_line_nature_18.png';
 
-  // The item icon of Basic Fertilizer, for the fertilizer lines with no fertilizer of their own.
-  var FERT_ICON = '../../Res/Material/UI_Item_Icon_Mat_S_1500710801.png';
-
   var PROBLEM_LINES = {
     pest: ['problemPest', '../../Res/PlantAnomaly/Pest.png', 3],
     frost: ['problemFrost', '../../Res/PlantAnomaly/Frost.png', 4],
@@ -15,7 +12,8 @@
     weed: ['problemWeed', '../../Res/PlantAnomaly/Weed.png', 0],
     lightLow: ['problemLightLow', '../../Res/PlantAnomaly/LightLow.png', 0],
     // No game icon exists for too strong light; the light icon stands for both light problems.
-    lightHigh: ['problemLightHigh', '../../Res/PlantAnomaly/LightLow.png', 0]
+    lightHigh: ['problemLightHigh', '../../Res/PlantAnomaly/LightLow.png', 0],
+    needFert: ['problemNeedFert', FERT_ICON, 0]
   };
 
   var STATE_LINES = {
@@ -88,22 +86,19 @@
         }
       });
     }
-    if (pot.state === 'mature' && status === 1) {
-      var total = row.harvestTotalSeconds || 0;
+    if (pot.state === 'mature' && status === 1 && !noHarvestWindow(row)) {
       rows.push({
         key: gameWord(state && state.i18n_plantHarvest, word('labelHarvest')),
-        bar: { fill: total > 0 ? fillOf(remain / total) : 1, kind: 'greenline-ripe', text: barTime(remain, lang), pause: false }
+        bar: { fill: fillOf(remain / row.harvestTotalSeconds), kind: 'greenline-ripe', text: barTime(remain, lang), pause: false }
       });
     }
 
-    // Fertilizer: the name (a grey None with no icon), then the auto value, white when on, grey when off.
-    rows.push({
-      key: word('labelFertilizer'), icon: pot.fertName ? (pot.fertIcon || '') : '', cls: '',
-      parts: [
-        { text: pot.fertName || word('valueNone'), cls: 'greenline-fert-name' + (pot.fertName ? '' : ' greenline-muted') },
-        { text: word(pot.autoFert ? 'autoOn' : 'autoOff'), cls: 'greenline-fert-auto' + (pot.autoFert ? '' : ' greenline-muted') }
-      ]
-    });
+    // Fertilizer: the name (a grey None with no icon), the dose of a part dose ('1/4'), then the auto
+    // value, white when on, grey when off.
+    var fertParts = [{ text: pot.fertName || word('valueNone'), cls: 'greenline-fert-name' + (pot.fertName ? '' : ' greenline-muted') }];
+    if (pot.fertName && pot.fertDose) fertParts.push({ text: pot.fertDose, cls: 'greenline-fert-dose' });
+    fertParts.push({ text: word(pot.autoFert ? 'autoOn' : 'autoOff'), cls: 'greenline-fert-auto' + (pot.autoFert ? '' : ' greenline-muted') });
+    rows.push({ key: word('labelFertilizer'), icon: pot.fertName ? (pot.fertIcon || '') : '', cls: '', parts: fertParts });
     rows.push({
       key: word('autoReplant'), icon: '', text: word(pot.autoReplant === false ? 'valueOff' : 'valueOn'),
       cls: pot.autoReplant === false ? 'greenline-muted' : ''

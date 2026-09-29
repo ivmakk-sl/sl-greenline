@@ -79,7 +79,7 @@ namespace Greenline
             sb.Append($"Greenline pots: count={pots.Count} floors=");
             foreach (var f in floors) sb.Append($"[{f.Floor} {f.Label}: {string.Join(",", f.Pots)}]");
             foreach (var p in pots)
-                sb.Append($"\n  pot={p.PotId} row={p.RowId} click={p.ClickId} capacity={p.PotSize} cropSize={p.CropSize} state={p.State} flags={p.Flags} grow={p.GrowRemainSeconds} '{p.PotName}' '{p.CropName}' fert='{p.FertName}'");
+                sb.Append($"\n  pot={p.PotId} row={p.RowId} click={p.ClickId} capacity={p.PotSize} cropSize={p.CropSize} state={p.State} flags={p.Flags} grow={p.GrowRemainSeconds} '{p.PotName}' '{p.CropName}' fert='{p.FertName}' neverWithers={p.NeverWithers} fertDose='{p.FertDose}'");
             Plugin.Log.LogDebug(sb.ToString());
         }
 
@@ -128,6 +128,7 @@ namespace Greenline
                 if (hasCrop)
                 {
                     pot.RowId = plant.showInstanceId;
+                    pot.NeverWithers = plant.NeverWithers();
                     pot.GrowRemainSeconds = pot.State == GridLogic.PotState.Growing
                         ? GridLogic.TimeToMature(plant.GetRemainSeconds(), pot.Flags, plant.AnomalyStallStartSeconds, plant.GetCurrentTotalSeconds())
                         : 0;
@@ -148,6 +149,7 @@ namespace Greenline
                             pot.FertName = Text(config, fert.ItemName);
                             pot.FertIcon = fert.WebIcon ?? "";
                         }
+                        pot.FertDose = GridLogic.FertDose(plant.FertItemConfigId, plant.PlantFertMissing, pot.PotSize);
                     }
                 }
                 pots.Add(pot);

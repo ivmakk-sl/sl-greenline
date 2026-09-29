@@ -1,2 +1,10 @@
+v1.1.0 - 2026-09-29
+Added: Auto-fertilize also plants with a part dose when you have less fertilizer than the pot needs, as the game does since version 1.1.
+Added: Overwinter No.1 shows Needs Fertilizer in the pot grid and on the pot card.
+Added: The pot card shows the dose of a part dose after the fertilizer name, for example 1/2.
+Changed: Auto-fertilize picks the fertilizer that gives the largest speed bonus, a part dose included. The message shows only when you have no fertilizer.
+Changed: Pest or Frost on Overwinter No.1 shows as a stop of growth, not a threat, and a mature Overwinter No.1 shows no harvest countdown.
+Removed: Support for game version 1.0. Greenline 1.1.0 needs Survival Log 1.1.18153 or later.
+
 v1.0.1 - 2026-09-27
 Fixed: Greenline reduces repeated work in the game's interface during play. The countdowns and the pot card update four times per second instead of every frame. The pot grid and the pot card keep the same appearance and controls.

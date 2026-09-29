@@ -10,14 +10,15 @@ namespace Greenline
     {
         public enum PotState { Empty, Growing, Mature, Withered, Poor }
 
-        // The bits of the game's PlantAnomaly flags.
-        public const int Pest = 1, Weed = 2, Drought = 4, LightLow = 8, LightHigh = 16, Frost = 32;
+        // The bits of the game's PlantAnomaly flags. NeedFert is a research crop that did not get its
+        // fertilizer round.
+        public const int Pest = 1, Weed = 2, Drought = 4, LightLow = 8, LightHigh = 16, Frost = 32, NeedFert = 256;
 
         // The problems that get a badge, the most urgent first: Pest and Frost kill the crop, the others
         // only stop its growth. LightHigh has no game icon, so it gets no badge.
         private static readonly (int Bit, string Badge)[] BadgeOrder =
         {
-            (Pest, "pest"), (Frost, "frost"), (Drought, "drought"), (Weed, "weed"), (LightLow, "lightLow"),
+            (Pest, "pest"), (Frost, "frost"), (Drought, "drought"), (Weed, "weed"), (LightLow, "lightLow"), (NeedFert, "needFert"),
         };
 
         // The badge of a cell: the withered badge for a withered crop, else the most urgent problem of
@@ -41,6 +42,14 @@ namespace Greenline
             return remainSeconds + System.Math.Max(0, nowSeconds - stallStartSeconds);
         }
 
+        // The dose of a part dose as "<count>/<pot size>", or "" for a full dose or no fertilizer. The
+        // game keeps the count that the planting was short of (PlantFertMissing).
+        public static string FertDose(int fertItem, int fertMissing, int potSize)
+        {
+            if (fertItem <= 0 || fertMissing <= 0 || fertMissing >= potSize) return "";
+            return $"{potSize - fertMissing}/{potSize}";
+        }
+
         // One placed pot, read out of the game by PotGrid.
         public sealed class Pot
         {
@@ -55,11 +64,15 @@ namespace Greenline
             public PotState State;
             public string CropName = "", CropIcon = "";
             public int CropSize;
+            // A research crop: Pest and Frost do not kill it, and it has no harvest window.
+            public bool NeverWithers;
             public int Flags;
             public int GrowRemainSeconds;
             // The full growth time of the crop, for the growth bar of the hover card.
             public int GrowTotalSeconds;
             public string FertName = "", FertIcon = "";
+            // The dose of a part dose ("1/4"), or "" (FertDose).
+            public string FertDose = "";
             public bool AutoFert;
             public bool AutoReplant = true;
         }
@@ -84,10 +97,11 @@ namespace Greenline
                 .ToList();
         }
 
-        // The problems that the hover card lists, in the badge order, then LightHigh.
+        // The problems that the hover card lists: the badge order with LightHigh after LightLow.
         private static readonly (int Bit, string Name)[] ProblemOrder =
         {
             (Pest, "pest"), (Frost, "frost"), (Drought, "drought"), (Weed, "weed"), (LightLow, "lightLow"), (LightHigh, "lightHigh"),
+            (NeedFert, "needFert"),
         };
 
         private static string StateName(PotState state)
@@ -150,6 +164,7 @@ namespace Greenline
                     .Append(",\"cropName\":").Append(PageJson.Str(p.CropName))
                     .Append(",\"cropIcon\":").Append(PageJson.Str(p.CropIcon))
                     .Append(",\"cropSize\":").Append(p.CropSize)
+                    .Append(",\"neverWithers\":").Append(p.NeverWithers ? "true" : "false")
                     .Append(",\"problems\":[").Append(string.Join(",", problems)).Append(']')
                     .Append(",\"badge\":").Append(PageJson.Str(Badge(p.Flags, p.State)))
                     // The card reads the time to mature of a crop with no problem from the game row, which
@@ -158,6 +173,7 @@ namespace Greenline
                     .Append(",\"growTotalSeconds\":").Append(p.GrowTotalSeconds)
                     .Append(",\"fertName\":").Append(PageJson.Str(p.FertName))
                     .Append(",\"fertIcon\":").Append(PageJson.Str(p.FertIcon))
+                    .Append(",\"fertDose\":").Append(PageJson.Str(p.FertDose))
                     .Append(",\"autoFert\":").Append(p.AutoFert ? "true" : "false")
                     .Append(",\"autoReplant\":").Append(p.AutoReplant ? "true" : "false")
                     .Append('}');

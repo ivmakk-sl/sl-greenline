@@ -24,6 +24,7 @@
     drought: '../../Res/PlantAnomaly/Drought.png',
     weed: '../../Res/PlantAnomaly/Weed.png',
     lightLow: '../../Res/PlantAnomaly/LightLow.png',
+    needFert: FERT_ICON,
     withered: '../../Res/PlantAnomaly/Withered.png'
   };
 
@@ -35,7 +36,7 @@
     if (isStalled(pot)) return '';
     if (!pot || !pot.rowId || pot.state === 'withered') return '';
     var row = rows[String(pot.rowId)];
-    if (!row || !hasCountdown(row.status)) return '';
+    if (!row || !hasCountdown(row.status) || noHarvestWindow(row)) return '';
     return shortTime(row.remainGameSeconds, potsData.lang);
   }
 

@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-29
+
+### Added
+
+- A part dose for Auto-fertilize: when the containers have less fertilizer than the pot size, the replant plants with what they have, as the game does since version 1.1.
+- The Needs Fertilizer problem of a research crop (Overwinter No.1) in the pot grid and on the pot card: the Basic Fertilizer icon as the badge, the pause mark, and a red State row with the game's word.
+- The dose of a part dose on the Fertilizer row of the pot card, for example `Premium Organic Fertilizer 1/2`. A long fertilizer name is cut with "…" so the row stays inside the card.
+
+### Changed
+
+- The fertilizer pick of Auto-fertilize: the fertilizer with the largest speed bonus for the pot, a part dose included, and the lower fertilizer on a tie. The pop text shows only when the containers have no fertilizer. A research crop gets no fertilizer at planting.
+- A research crop in the pot grid and on the pot card: its Pest or Frost shows as a stop of growth (the red border and the pause mark, no red pulse, no time), and a mature research crop has no countdown and no harvest bar, because it has no harvest window.
+
+### Removed
+
+- Support for game version 1.0. Greenline 1.1.0 needs *Survival Log* 1.1.18153 or later.
+
 ## [1.0.1] - 2026-09-27
 
 ### Fixed

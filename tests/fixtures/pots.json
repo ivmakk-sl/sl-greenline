@@ -14,46 +14,46 @@
     "1001": {
       "rowId": 5001, "clickId": 5001, "potName": "Large Planter", "potIcon": "../../Res/Furniture/UI_Item_Icon_plantcommon_large.png", "potSize": 4,
       "state": "growing",
-      "cropName": "Watermelon", "cropIcon": "../../Res/Food/UI_Item_Icon_Food_xigua.png", "cropSize": 4,
+      "cropName": "Watermelon", "cropIcon": "../../Res/Food/UI_Item_Icon_Food_xigua.png", "cropSize": 4, "neverWithers": false,
       "problems": ["pest", "drought"],
       "badge": "pest",
-      "growRemainSeconds": 105960, "growTotalSeconds": 211920, "fertName": "Compound Fertilizer", "fertIcon": "../../Res/Material/UI_Item_Icon_Mat_S_1500310101.png",
+      "growRemainSeconds": 105960, "growTotalSeconds": 211920, "fertName": "Compound Fertilizer", "fertIcon": "../../Res/Material/UI_Item_Icon_Mat_S_1500310101.png", "fertDose": "",
       "autoFert": true, "autoReplant": true
     },
     "1002": {
       "rowId": 5002, "clickId": 5002, "potName": "Small Planter", "potIcon": "../../Res/Furniture/UI_Item_Icon_plantcommon_small.png", "potSize": 1,
       "state": "mature",
-      "cropName": "Potato", "cropIcon": "../../Res/Food/UI_Item_Icon_Food_M_1300900301.png", "cropSize": 1,
+      "cropName": "Potato", "cropIcon": "../../Res/Food/UI_Item_Icon_Food_M_1300900301.png", "cropSize": 1, "neverWithers": false,
       "problems": [],
       "badge": "",
-      "growRemainSeconds": 0, "growTotalSeconds": 0, "fertName": "", "fertIcon": "",
+      "growRemainSeconds": 0, "growTotalSeconds": 0, "fertName": "", "fertIcon": "", "fertDose": "",
       "autoFert": false, "autoReplant": false
     },
     "1003": {
       "rowId": 0, "clickId": 5003, "potName": "Small Planter", "potIcon": "../../Res/Furniture/UI_Item_Icon_plantcommon_small.png", "potSize": 1,
       "state": "empty",
-      "cropName": "", "cropIcon": "", "cropSize": 0,
+      "cropName": "", "cropIcon": "", "cropSize": 0, "neverWithers": false,
       "problems": [],
       "badge": "",
-      "growRemainSeconds": 0, "growTotalSeconds": 0, "fertName": "", "fertIcon": "",
+      "growRemainSeconds": 0, "growTotalSeconds": 0, "fertName": "", "fertIcon": "", "fertDose": "",
       "autoFert": true, "autoReplant": true
     },
     "1004": {
       "rowId": 5004, "clickId": 5004, "potName": "Medium Planter", "potIcon": "../../Res/Furniture/UI_Item_Icon_plantcommon_middle.png", "potSize": 2,
       "state": "withered",
-      "cropName": "Spinach", "cropIcon": "../../Res/Food/UI_Item_Icon_Food_bocai_v2.png", "cropSize": 1,
+      "cropName": "Spinach", "cropIcon": "../../Res/Food/UI_Item_Icon_Food_bocai_v2.png", "cropSize": 1, "neverWithers": false,
       "problems": [],
       "badge": "withered",
-      "growRemainSeconds": 0, "growTotalSeconds": 0, "fertName": "", "fertIcon": "",
+      "growRemainSeconds": 0, "growTotalSeconds": 0, "fertName": "", "fertIcon": "", "fertDose": "",
       "autoFert": false, "autoReplant": true
     },
     "1005": {
       "rowId": 0, "clickId": 5005, "potName": "Medium Planter", "potIcon": "../../Res/Furniture/UI_Item_Icon_plantcommon_middle.png", "potSize": 2,
       "state": "poor",
-      "cropName": "", "cropIcon": "", "cropSize": 0,
+      "cropName": "", "cropIcon": "", "cropSize": 0, "neverWithers": false,
       "problems": [],
       "badge": "",
-      "growRemainSeconds": 0, "growTotalSeconds": 0, "fertName": "", "fertIcon": "",
+      "growRemainSeconds": 0, "growTotalSeconds": 0, "fertName": "", "fertIcon": "", "fertDose": "",
       "autoFert": false, "autoReplant": true
     }
   }
