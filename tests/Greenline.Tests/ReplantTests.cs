@@ -67,26 +67,39 @@ public class ReplantTests
 
     private const int Premium = 15503, Compound = 15502, Basic = 15501;
 
-    private static Dictionary<int, int> Pool(params (int Item, int Count)[] items) =>
-        items.ToDictionary(i => i.Item, i => i.Count);
+    // The fertilizers of the planting window with the SpeedRate of each one.
+    private static (int Item, int Count, float Speed)[] Pool(params (int Item, int Count)[] items) =>
+        items.Select(i => (i.Item, i.Count, i.Item == Premium ? 1.0f : i.Item == Compound ? 0.5f : 0.3f)).ToArray();
 
     [Fact]
-    public void PickFertilizer_takes_the_best_fertilizer_that_is_enough()
+    public void PickFertilizer_takes_a_full_dose_of_a_lower_fertilizer_over_a_smaller_part_dose()
     {
-        Assert.Equal(Premium, ReplantLogic.PickFertilizer(Pool((Premium, 2), (Compound, 5), (Basic, 9)), 2));
+        Assert.Equal(Basic, ReplantLogic.PickFertilizer(Pool((Premium, 1), (Basic, 4)), 4));
     }
 
     [Fact]
-    public void PickFertilizer_takes_a_lower_fertilizer_when_the_best_is_short()
+    public void PickFertilizer_takes_a_part_dose_when_it_gives_the_largest_speed_bonus()
+    {
+        Assert.Equal(Premium, ReplantLogic.PickFertilizer(Pool((Premium, 3), (Basic, 4)), 4));
+    }
+
+    [Fact]
+    public void PickFertilizer_gives_a_tie_to_the_lower_fertilizer()
     {
         Assert.Equal(Compound, ReplantLogic.PickFertilizer(Pool((Premium, 1), (Compound, 5)), 2));
-        Assert.Equal(Basic, ReplantLogic.PickFertilizer(Pool((Premium, 1), (Compound, 1), (Basic, 4)), 4));
+        Assert.Equal(Compound, ReplantLogic.PickFertilizer(Pool((Compound, 5), (Premium, 1)), 2));
     }
 
     [Fact]
-    public void PickFertilizer_gives_none_when_no_fertilizer_is_enough()
+    public void PickFertilizer_takes_a_part_dose_when_no_fertilizer_is_enough()
     {
-        Assert.Equal(0, ReplantLogic.PickFertilizer(Pool((Basic, 1)), 2));
+        Assert.Equal(Basic, ReplantLogic.PickFertilizer(Pool((Basic, 1)), 2));
+    }
+
+    [Fact]
+    public void PickFertilizer_gives_none_when_the_pool_has_no_fertilizer()
+    {
+        Assert.Equal(0, ReplantLogic.PickFertilizer(Pool((Premium, 0), (Basic, 0)), 2));
         Assert.Equal(0, ReplantLogic.PickFertilizer(Pool(), 1));
     }
 

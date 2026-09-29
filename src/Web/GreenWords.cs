@@ -24,6 +24,7 @@ namespace Greenline
             new[] { "problemLightHigh", "WebUI_PlantPanel_22", "Light Too Strong", "光照过强" },
             new[] { "problemWeed", null, "Weed", "杂草" },
             new[] { "problemDrought", null, "Drought", "缺水" },
+            new[] { "problemNeedFert", "SR_Web_DailyFert_StateFertStalled", "Needs Fertilizer", "缺肥停滞" },
             new[] { "labelState", null, "State", "状态" },
             new[] { "labelGrowth", null, "Growth", "生长" },
             new[] { "labelHarvest", null, "Harvest", "收获" },
@@ -42,7 +43,7 @@ namespace Greenline
             new[] { "reasonFit", "WebUI_PlantPanel_32", "the crop does not fit this pot", "容器太小，无法容纳此植物" },
             new[] { "reasonLight", "WebUI_PlantPanel_21", "not enough light", "光照不足" },
             new[] { "reasonCold", "WebUI_PlantPanel_23", "too cold", "温度过低" },
-            new[] { "popNoFert", null, "{0} replanted with no fertilizer: not enough fertilizer", "{0}已补种，未施肥：肥料数量不足" },
+            new[] { "popNoFert", null, "{0} replanted with no fertilizer: no fertilizer in storage", "{0}已补种，未施肥：没有肥料" },
             new[] { "autoReplantTip", null, "After a harvest, Tend All plants the same crop again, with no planting window.", "收获后，一键巡田会自动补种同一作物，不打开种植窗口。" },
         };
 

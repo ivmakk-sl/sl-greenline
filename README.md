@@ -12,10 +12,11 @@ The expanded plant list groups pots by floor. Each floor starts with its name an
 
 - Each cell shows the crop icon, or the pot icon if the pot is empty. A pot that needs the Till chore also shows a Till mark.
 - A mature crop has a gold border.
-- A crop with problems shows the game's icon for the most urgent problem on a red disc. Pest and Frost can kill the crop, so the cell pulses red. Weeds, Drought, and Low Light stop growth, so the cell has a red border.
+- A crop with problems shows the game's icon for the most urgent problem on a red disc. Pest and Frost can kill the crop, so the cell pulses red. Weeds, Drought, Low Light, and Needs Fertilizer stop growth, so the cell has a red border. The game has no icon for Needs Fertilizer, so its badge is the Basic Fertilizer icon.
+- A research crop (Overwinter No.1) never withers. Its Pest or Frost only stops growth, so its cell has the red border and the pause mark, not the red pulse. A mature research crop has no harvest window, so its cell shows no countdown.
 - Each cell shows a countdown below its icon. This shows the time until death from Pest or Frost, the end of the harvest window, or crop maturity.
 - If growth stops, a red pause mark replaces the countdown. It uses the same two bars as the game's pause icon. The game restores the paused growth time when you resolve the problem.
-- Point at a cell to see its pot card next to the pointer. The card shows the pot and crop sizes, crop state, all problems, full times, fertilizer, and the pot's Auto-fertilize setting.
+- Point at a cell to see its pot card next to the pointer. The card shows the pot and crop sizes, crop state, all problems, full times, fertilizer, and the pot's Auto-fertilize setting. For a crop planted with less fertilizer than the pot size, the card shows the dose after the fertilizer name, for example `1/2`.
 - Point at a pot in the game world to see the same card.
 - Click a cell to move the camera to the pot and open its menu. This also works for empty pots.
 
@@ -36,7 +37,8 @@ Greenline replants without requiring you to use the planting window. It uses the
 Each pot also has two settings. They appear in the planting window header and below the timer in the window for a growing crop. Changes apply immediately.
 
 - **Auto-replant** is enabled by default. When disabled, Tend All still harvests and tills that pot but leaves it empty.
-- **Auto-fertilize** is disabled by default. When enabled, replanting uses the best fertilizer available in sufficient quantity for the pot: Premium Organic, then Compound, then Basic. If no fertilizer has sufficient quantity, Greenline replants without fertilizer and shows a message.
+- **Auto-fertilize** is disabled by default. When enabled, replanting uses the fertilizer that gives the crop the largest speed bonus. The game plants with a part dose when the containers have less fertilizer than the pot size, and the bonus shrinks with the dose. Greenline compares these part doses too. For example, in a pot of size 2, 1 Premium Organic Fertilizer (+50%) beats 2 Basic Fertilizer (+30%). On a tie, Greenline uses the lower fertilizer and keeps the better one. If the containers have no fertilizer, Greenline replants without fertilizer and shows a message.
+- A research crop (Overwinter No.1) takes no fertilizer at planting, so Greenline adds none. Its fertilizer rounds stay your task: Tend All does not give them, and the pot grid shows Needs Fertilizer when a round is missed.
 
 If Greenline cannot replant, it opens the planting window. A red message above the Plant button explains the reason:
 
@@ -54,7 +56,8 @@ Greenline stores each pot's last crop, Auto-replant setting, and Auto-fertilize 
 
 ## Requirements
 
-The [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12), the BepInEx 6 (IL2CPP) build for the game.
+- *Survival Log* version 1.1.18153 or later. For game version 1.0, use Greenline 1.0.1.
+- The [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12), the BepInEx 6 (IL2CPP) build for the game.
 
 ## Install
 
