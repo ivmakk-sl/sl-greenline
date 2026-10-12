@@ -531,6 +531,31 @@
   display: none;
 }
 
+/* The arrow of the pinned card, as the tooltips of Stats UI: a turned square in the color and the line of
+   the game's tooltip, at the side of the anchor, with its middle at --gl-arrow-y (set by the page script).
+   Under the card (z-index -1 in the stacking context of the card node), so only its point shows. */
+.greenline-hover::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: -5px;
+  top: calc(var(--gl-arrow-y, 50%) - 5px);
+  width: 9px;
+  height: 9px;
+  background: rgb(from var(--gl-tip) r g b / var(--gl-card-opacity));
+  border-left: 1px solid rgb(from var(--gl-white) r g b / 22%);
+  border-bottom: 1px solid rgb(from var(--gl-white) r g b / 22%);
+  transform: rotate(45deg);
+}
+
+.greenline-hover.greenline-hover-left::before {
+  left: auto;
+  right: -5px;
+  border: 0;
+  border-top: 1px solid rgb(from var(--gl-white) r g b / 22%);
+  border-right: 1px solid rgb(from var(--gl-white) r g b / 22%);
+}
+
 .greenline-hover > .greenline-tip {
   position: static;
   transform: none;

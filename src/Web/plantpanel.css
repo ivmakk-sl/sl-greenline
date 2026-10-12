@@ -1,5 +1,5 @@
-/* The pot options (Auto-replant, Auto-fertilize) and the reason line of the two plant windows.
-   plantpanel.js writes this file (after tokens.css) into the planting window and the growing crop window.
+/* The pot options (Auto-replant, Auto-fertilize) of the two plant windows, and the last-crop line of the
+   planting window. The plant panel script writes this file (after tokens.css) into both windows.
    The colors fall back to the game's own variables of these windows, so they follow a game restyle. */
 :root {
   --gl-option-text: var(--text-dark, #9ca3af);
@@ -63,17 +63,61 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2l2.4 2.4 4.6-5' fill='none' stroke='white' stroke-width='1.8'/%3E%3C/svg%3E");
 }
 
-/* The look of the game's own warning line (state.selection.warningText). */
-.greenline-reason {
+/* The last-crop line: at the end of the title row of the left column, at most two small lines. The
+   negative block margins keep its box inside the height of the title row, so the window keeps its
+   height. It takes only the free width of the row (width 0, then grow), so a long text is cut and
+   never widens the column. It undoes the title's capitals, spacing, and glow. */
+.greenline-last-crop {
+  flex: 1 1 0;
+  width: 0;
+  margin-block: -4px;
+  padding-left: 12px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  text-shadow: none;
+  white-space: nowrap;
+}
+
+.greenline-last-crop > * {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.greenline-last-crop-head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: bold;
+  gap: 5px;
+}
+
+.greenline-last-crop-label {
+  flex: 0 0 auto;
+  font-weight: normal;
+  color: var(--gl-option-text);
+}
+
+.greenline-last-crop-head img {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.greenline-last-crop-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--gl-white);
+}
+
+.greenline-last-crop-red {
   color: var(--gl-danger);
-  background: rgb(from var(--gl-danger) r g b / 10%);
-  border: 1px solid rgb(from var(--gl-danger) r g b / 20%);
-  text-align: center;
 }

@@ -5,39 +5,6 @@ using GameCore.HotUpdate.ReduxUI;
 
 namespace Greenline
 {
-    // A new Patrol request starts a new replant set.
-    [HarmonyPatch(typeof(PlantChoreBatchManager), "OnBatchRequest")]
-    internal static class ReplantOnBatchRequest
-    {
-        private static void Prefix()
-        {
-            if (Plugin.Verbose.Value) Plugin.Log.LogDebug("Greenline Patrol: request");
-            Replant.Clear();
-        }
-    }
-
-    // Patrol queues each chore of a pot through Dispatch. Only a Plant chore (1610) that Patrol queued
-    // makes the pot a replant pot, so a Plant chore that the player starts by hand is never changed. The
-    // Plant chore of a pot whose own Auto-replant is off is not queued at all: Patrol still harvests
-    // and tills that pot, and the chain of chores goes on with no planting window.
-    [HarmonyPatch(typeof(PlantChoreBatchManager), "Dispatch")]
-    internal static class ReplantOnDispatch
-    {
-        private static bool Prefix(long potId, int furnitureActionId, int plantActionId)
-        {
-            if (Plugin.Verbose.Value)
-                Plugin.Log.LogDebug($"Greenline Patrol: chore pot={potId} furnitureAction={furnitureActionId} plantAction={plantActionId}");
-            if (plantActionId != Replant.PlantActionId) return true;
-            if (!PotOptions.Replant(potId))
-            {
-                if (Plugin.Verbose.Value) Plugin.Log.LogDebug($"Greenline replant: pot {potId} has Auto-replant off, its Plant chore is dropped");
-                return false;
-            }
-            Replant.Add(potId);
-            return true;
-        }
-    }
-
     // Each planting, by hand or by replant, sets the last crop of the pot.
     [HarmonyPatch(typeof(LeadingRole), "OnPlantPanelStartPlant")]
     internal static class ReplantOnStartPlant
@@ -81,7 +48,7 @@ namespace Greenline
         private static void Postfix(State_Web_PlantPanel __result)
         {
             if (__result == null) return;
-            try { PotOptions.Open(__result.FurnitureInstanceId); }
+            try { Replant.ShowLine(__result.FurnitureInstanceId, null); }
             catch (Exception e) { Plugin.WarnOnce($"Greenline: pot option checkboxes failed: {e.Message}"); }
             if (!Replant.Take(__result.FurnitureInstanceId))
             {

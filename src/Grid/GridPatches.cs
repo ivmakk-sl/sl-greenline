@@ -12,7 +12,6 @@ namespace Greenline
     {
         private static void Postfix(Ac_CoreUI1_AddMaturePlant ac, State_Web_CoreUI1 state)
         {
-            Patrol.UnlockHeader(state);
             if (Plugin.Verbose.Value && ac != null)
                 Plugin.Log.LogDebug($"Greenline RA_AddMaturePlant: ShowInstanceId={ac.ShowInstanceId} status={ac.Status}");
             PotGrid.MarkDirty();

@@ -21,26 +21,44 @@ namespace Greenline
         }
     }
 
-    // A click on a pot option checkbox (plantpanel.js). The message layout is the one that Trapline
-    // reads: four fields joined by U+001E, [2] the type and [3] the JSON data.
+    // The messages of the page scripts: a click on a pot option checkbox (GREENLINE_POT_OPTION), on Tend
+    // All (GREENLINE_TEND), and on the Auto-replant checkbox (GREENLINE_REPLANT). The message layout is the
+    // one that Trapline reads: four fields joined by U+001E, [2] the type and [3] the JSON data. Only the
+    // mod's own messages stop here; each other message goes on to the game.
     [HarmonyPatch(typeof(WebUILayer), "OnMessageFromJS")]
-    internal static class PotOptionMessage
+    internal static class GreenlineMessage
     {
-        private const string MessageType = "GREENLINE_POT_OPTION";
-
         private static bool Prefix(Vuplex.WebView.EventArgs<string> eventArgs)
         {
             string text = eventArgs?.Value;
             if (string.IsNullOrEmpty(text)) return true;
             string[] parts = text.Split('\x1E');
-            if (parts.Length < 3 || parts[2] != MessageType) return true;
+            if (parts.Length < 3) return true;
+            string type = parts[2], data = parts.Length > 3 ? parts[3] : "";
             try
             {
-                var option = PageJson.ParsePotOption(parts.Length > 3 ? parts[3] : "");
-                if (option.HasValue) PotOptions.Set(option.Value.Pot, option.Value.Key, option.Value.On);
+                switch (type)
+                {
+                    case "GREENLINE_POT_OPTION":
+                        var option = PageJson.ParsePotOption(data);
+                        if (option.HasValue) PotOptions.Set(option.Value.Pot, option.Value.Key, option.Value.On);
+                        return false;
+                    case "GREENLINE_TEND":
+                        Patrol.Run();
+                        return false;
+                    case "GREENLINE_REPLANT":
+                        var on = PageJson.ParseReplant(data);
+                        if (on.HasValue) PotOptions.SetGlobalReplant(on.Value);
+                        return false;
+                    default:
+                        return true;
+                }
             }
-            catch (Exception e) { Plugin.WarnOnce($"Greenline: {MessageType} handling failed: {e.Message}"); }
-            return false;
+            catch (Exception e)
+            {
+                Plugin.WarnOnce($"Greenline: {type} handling failed: {e.Message}");
+                return false;
+            }
         }
     }
 
@@ -52,8 +70,19 @@ namespace Greenline
 
         internal static bool Fert(long potId) => SaveKeys.Get("fert", potId, 0) != 0;
 
-        // Sends the pot's values to the window that opens for it.
-        internal static void Open(long potId) => PlantPanelScript.SetState(potId, Replant(potId), Fert(potId), "");
+        // The Auto-replant checkbox of the plant list: Greenline's own option, on in a save with no value of
+        // it. The game's own Replant value is not read.
+        internal static bool GlobalReplant() => SaveKeys.Get("replant", SaveKeyLogic.GlobalPot, 1) != 0;
+
+        internal static void SetGlobalReplant(bool on)
+        {
+            SaveKeys.Set("replant", SaveKeyLogic.GlobalPot, on ? 1 : 0);
+            PotGrid.MarkDirty();
+            if (Plugin.Verbose.Value) Plugin.Log.LogDebug($"Greenline replant: global option {(on ? "on" : "off")}");
+        }
+
+        // Sends the pot's values to the window of a growing crop that opens for it.
+        internal static void Open(long potId) => PlantPanelScript.SetState(potId, Replant(potId), Fert(potId));
 
         internal static void Set(long potId, string key, bool on)
         {

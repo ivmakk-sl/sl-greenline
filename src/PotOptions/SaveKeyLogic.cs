@@ -10,6 +10,10 @@ namespace Greenline
 
         private const string Prefix = "greenline.";
 
+        // The pot id of the mod's global values, such as the Auto-replant checkbox (greenline.replant.0). No
+        // pot has this id, so a load keeps its keys as they are.
+        public const long GlobalPot = 0;
+
         // The save key of one value of a pot.
         public static string Key(string kind, long potId) => Prefix + kind + "." + potId;
 
@@ -17,7 +21,7 @@ namespace Greenline
         public static bool IsModKey(string key) => key != null && key.StartsWith(Prefix, System.StringComparison.Ordinal);
 
         // Moves the mod's save keys to the new pot ids after a load (old id to new id). A key of a pot with
-        // no new id, and any key that is not a mod key, is dropped. The result is built fresh, so two pots
+        // no new id, and any key that is not a mod key, is dropped. A global key (GlobalPot) stays. The result is built fresh, so two pots
         // that swap ids cannot overwrite each other.
         public static Dictionary<string, int> Rekey(IDictionary<string, int> entries, IDictionary<long, long> oldToNew)
         {
@@ -26,7 +30,9 @@ namespace Greenline
             {
                 string[] parts = entry.Key.Split('.');
                 if (parts.Length != 3 || parts[0] != "greenline" || System.Array.IndexOf(SaveKinds, parts[1]) < 0) continue;
-                if (!long.TryParse(parts[2], out long oldId) || !oldToNew.TryGetValue(oldId, out long newId)) continue;
+                if (!long.TryParse(parts[2], out long oldId)) continue;
+                long newId = oldId;
+                if (oldId != GlobalPot && !oldToNew.TryGetValue(oldId, out newId)) continue;
                 result[Key(parts[1], newId)] = entry.Value;
             }
             return result;

@@ -1,43 +1,46 @@
 // Runs page.js against the game's own CoreUI1.html, so a game update that renames or removes a page
 // part page.js depends on shows up here instead of only in the game. The pot data is the fixture that
 // the xUnit test of GridLogic.ToJson compares with, so both sides of the JSON contract use one file.
-'use strict';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import url from 'node:url';
+import vm from 'node:vm';
+import { JSDOM } from 'jsdom';
+import { test } from 'vitest';
 
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const url = require('node:url');
-const vm = require('node:vm');
-const { JSDOM } = require('jsdom');
+// The jsdom windows carry the game's page globals (state, eval) and the test's own frame hooks, which
+// have no types.
+type Any = any;
+
+const HERE = path.dirname(url.fileURLToPath(import.meta.url));
 
 const GAME_DIR = process.env.SL_GAME_DIR ||
   'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Survival Log';
 const CORE_UI1_HTML = path.join(GAME_DIR, 'SurvivalLog_Data', 'StreamingAssets', 'WebUI', 'UI', 'CoreUI1', 'CoreUI1.html');
-const SRC_DIR = path.join(__dirname, '..', '..', 'src', 'Web');
-const PAGE_JS_PATH = path.join(SRC_DIR, 'page.js');
-const FIXTURE_PATH = path.join(__dirname, '..', 'fixtures', 'pots.json');
+const SRC_DIR = path.join(HERE, '..', '..', 'src', 'Web');
+// The behavior tests run the Vite bundle (npm test builds it first); the static test reads the FEATURES
+// table from the source, because Vite writes each string in double quotes.
+const PAGE_SOURCE_PATH = path.join(SRC_DIR, 'page', 'core.ts');
+const PAGE_BUNDLE_PATH = path.join(HERE, '..', '..', 'obj', 'page', 'page.js');
+const FIXTURE_PATH = path.join(HERE, '..', 'fixtures', 'pots.json');
 
 const gameFileExists = fs.existsSync(CORE_UI1_HTML);
 
 if (!gameFileExists) {
-  test('page.js against the game page', { skip: `game files not found under SL_GAME_DIR (${GAME_DIR}); set SL_GAME_DIR to the game folder` }, () => {});
+  test.skip('page.js against the game page: ' + `game files not found under SL_GAME_DIR (${GAME_DIR}); set SL_GAME_DIR to the game folder`, () => {});
 } else {
-  // page.js with each "// @include <file>" line replaced by that file of page/, as C# joins it
-  // (PageIncludes.Join).
-  const INCLUDE_LINE = /^[ \t]*\/\/ @include (\S+)[ \t\r]*$/gm;
-  const pageWrapper = fs.readFileSync(PAGE_JS_PATH, 'utf8');
-  const pageJs = pageWrapper.replace(INCLUDE_LINE,
-    (_, name) => fs.readFileSync(path.join(SRC_DIR, 'page', name), 'utf8').replace(/\s+$/, ''));
+  const pageSource = fs.readFileSync(PAGE_SOURCE_PATH, 'utf8');
+  const pageJs = fs.readFileSync(PAGE_BUNDLE_PATH, 'utf8');
   // The CSS that C# hands to page.js (PageScript.Css): the tokens, then the page rules.
-  const pageCss = ['tokens.css', 'page.css'].map((f) => fs.readFileSync(path.join(SRC_DIR, f), 'utf8')).join('\n');
+  const pageCss = ['tokens.css', 'page.css'].map((f: Any) => fs.readFileSync(path.join(SRC_DIR, f), 'utf8')).join('\n');
   const coreUi1Html = fs.readFileSync(CORE_UI1_HTML, 'utf8');
 
   function fixture() { return JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf8')); }
 
   // Pulls the page part names out of the FEATURES table of page.js, so this test never copies the names.
   function featureNames() {
-    const table = pageJs.match(/var FEATURES = \{([\s\S]*?)\};/);
+    const table = pageSource.match(/export const FEATURES = \{([\s\S]*?)\};/);
     assert.ok(table, 'FEATURES table not found in page.js');
     const names = [];
     const quoted = /'([^']+)'/g;
@@ -49,62 +52,57 @@ if (!gameFileExists) {
 
   test('static: every FEATURES part name of page.js exists in CoreUI1.html', () => {
     for (const name of featureNames()) {
-      const present = name.replace(/^[#.]/, '').split('.').every((piece) => coreUi1Html.includes(piece));
+      const present = name.replace(/^[#.]/, '').split('.').every((piece: Any) => coreUi1Html.includes(piece));
       assert.ok(present, `page part "${name}" not found in CoreUI1.html`);
     }
   });
 
-  test('static: page.js includes each file of page/ once', () => {
-    const included = [...pageWrapper.matchAll(INCLUDE_LINE)].map((m) => m[1]).sort();
-    assert.deepEqual(included, fs.readdirSync(path.join(SRC_DIR, 'page')).filter((f) => f.endsWith('.js')).sort());
-  });
-
   // CoreUI1.html starts its own requestAnimationFrame loops, so each window is closed after its test.
-  async function loadCoreWindow(t) {
+  async function loadCoreWindow(t?: Any) {
     const dom = new JSDOM(coreUi1Html, {
       url: url.pathToFileURL(CORE_UI1_HTML).href,
       runScripts: 'dangerously',
       resources: 'usable',
       pretendToBeVisual: true
     });
-    t.after(() => dom.window.close());
-    await new Promise((resolve, reject) => {
+    t.onTestFinished(() => dom.window.close());
+    await new Promise((resolve: Any, reject: Any) => {
       dom.window.addEventListener('load', resolve);
       setTimeout(() => reject(new Error('CoreUI1.html did not fire load within 5s')), 5000);
     });
-    return dom.window;
+    return dom.window as Any;
   }
 
   // A blank window that stands in for the root page (Root.html), which holds the CoreUI1 iframe.
-  function makeRootWindow(t, coreWindow) {
+  function makeRootWindow(t?: Any, coreWindow?: Any) {
     const root = new JSDOM('<!doctype html><html><body></body></html>', {
       url: 'file:///Root.html',
       pretendToBeVisual: true
-    }).window;
-    t.after(() => root.close());
+    }).window as Any;
+    t.onTestFinished(() => root.close());
     const frameBox = { current: coreWindow || null };
     const originalQSA = root.document.querySelectorAll.bind(root.document);
-    root.document.querySelectorAll = (selector) =>
+    root.document.querySelectorAll = (selector: Any) =>
       selector === 'iframe' ? (frameBox.current ? [{ contentWindow: frameBox.current }] : []) : originalQSA(selector);
     vm.createContext(root);
     return root;
   }
 
-  function runPageJs(root, callExpr) {
+  function runPageJs(root?: Any, callExpr?: Any) {
     const css = 'window.__greenlineCss=' + JSON.stringify(pageCss) + ';';
     return vm.runInContext(css + pageJs + ';' + callExpr, root, { filename: 'page.js' });
   }
 
-  function setPots(root, data) {
+  function setPots(root?: Any, data?: Any) {
     return runPageJs(root, 'window.__greenline.setPots(' + JSON.stringify(data) + ')');
   }
 
-  function wait(win, ms) {
-    return new Promise((resolve) => win.setTimeout(resolve, ms));
+  function wait(win?: Any, ms?: Any) {
+    return new Promise((resolve: Any) => win.setTimeout(resolve, ms));
   }
 
   // The plant list message that the game sends (WebUI_CoreUI1_PlantMatureMsg).
-  async function postPlants(coreWindow, plants) {
+  async function postPlants(coreWindow?: Any, plants?: Any) {
     coreWindow.postMessage({
       type: 'WebUI_CoreUI1_PlantMatureMsg',
       data: { containerActive: true, plants }
@@ -112,7 +110,7 @@ if (!gameFileExists) {
     await wait(coreWindow, 30);
   }
 
-  function plant(rowId, status, totalSeconds, elapsedSeconds) {
+  function plant(rowId?: Any, status?: Any, totalSeconds?: Any, elapsedSeconds?: Any) {
     return {
       showInstanceId: rowId, plantName: 'Crop ' + rowId, status,
       harvestTotalSeconds: totalSeconds || 0, harvestElapsedSeconds: elapsedSeconds || 0, dispatchUtcMs: 0
@@ -124,7 +122,7 @@ if (!gameFileExists) {
 
   // Waits until Vue's enter transition of the popover ends, so its class writes are not counted as
   // writes of the mod.
-  async function expand(coreWindow) {
+  async function expand(coreWindow?: Any) {
     coreWindow.eval('state.maturePlantsExpanded = true');
     for (let i = 0; i < 50; i++) {
       await wait(coreWindow, 20);
@@ -134,7 +132,7 @@ if (!gameFileExists) {
     throw new Error('the popover enter transition did not end within 1s');
   }
 
-  async function setup(t, opts) {
+  async function setup(t?: Any, opts?: Any) {
     opts = opts || {};
     const core = await loadCoreWindow(t);
     await postPlants(core, opts.rows || FIXTURE_ROWS);
@@ -144,15 +142,15 @@ if (!gameFileExists) {
     return { core, root, result, doc: core.document };
   }
 
-  function cell(doc, potId) {
+  function cell(doc?: Any, potId?: Any) {
     return doc.querySelector('.greenline-cell[data-pot-id="' + potId + '"]');
   }
 
-  function gridPlace(el) {
+  function gridPlace(el?: Any) {
     return [el.style.getPropertyValue('grid-row'), el.style.getPropertyValue('grid-column')];
   }
 
-  test('jsdom: pot data turns the popover into a grid and hides the game rows', async (t) => {
+  test('jsdom: pot data turns the popover into a grid and hides the game rows', async (t: Any) => {
     const { doc, core, result } = await setup(t);
     assert.equal(result, 'installed');
 
@@ -163,7 +161,7 @@ if (!gameFileExists) {
     for (const row of rows) assert.equal(core.getComputedStyle(row).display, 'none');
   });
 
-  test('jsdom: the style node of the frame holds the CSS that C# hands to the script', async (t) => {
+  test('jsdom: the style node of the frame holds the CSS that C# hands to the script', async (t: Any) => {
     const { doc } = await setup(t);
 
     const styles = doc.querySelectorAll('#greenline-style');
@@ -172,29 +170,32 @@ if (!gameFileExists) {
   });
 
   // The selectors of each page.css rule whose value uses the token.
-  function selectorsUsing(token) {
+  function selectorsUsing(token?: Any) {
     const css = fs.readFileSync(path.join(SRC_DIR, 'page.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
     const out = [];
     for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-      if (m[2].includes('var(' + token + ')')) out.push(...m[1].split(',').map((s) => s.trim()));
+      if (m[2].includes('var(' + token + ')')) out.push(...m[1].split(',').map((s: Any) => s.trim()));
     }
     return out;
   }
 
-  test('jsdom: the background opacity rules reach the header, the grid, and the pot card of the game page', async (t) => {
+  test('jsdom: the background opacity rules reach the header, the grid, and the pot card of the game page', async (t: Any) => {
     const { doc } = await setup(t);
     hoverCell(doc, 1001);
 
     const panel = selectorsUsing('--gl-panel-opacity');
     const cardRule = selectorsUsing('--gl-card-opacity');
-    assert.deepEqual([panel.length, cardRule.length], [2, 1]);
+    assert.deepEqual([panel.length, cardRule.length], [2, 2]);
     assert.ok(doc.querySelector(panel[0]).classList.contains('mature-toggle-row'), panel[0]);
     assert.ok(doc.querySelector(panel[1]).classList.contains('mature-popover'), panel[1]);
     const potCard = doc.querySelector('.greenline-pot-card');
     assert.ok(potCard && potCard.matches(cardRule[0]), cardRule[0]);
+    // The arrow of the card has the same background.
+    assert.equal(cardRule[1], '.greenline-hover::before');
+    assert.ok(doc.querySelector('.greenline-hover').matches(cardRule[1].replace('::before', '')));
   });
 
-  test('jsdom: each floor has a label in column 1 that spans its lines', async (t) => {
+  test('jsdom: each floor has a label in column 1 that spans its lines', async (t: Any) => {
     const { doc } = await setup(t);
 
     const upper = doc.querySelector('.greenline-floor-label[data-floor-id="102"]');
@@ -205,7 +206,7 @@ if (!gameFileExists) {
     assert.deepEqual(gridPlace(home), ['2 / span 1', '1']);
   });
 
-  test('jsdom: each pot has one cell, placed by its floor and cell index', async (t) => {
+  test('jsdom: each pot has one cell, placed by its floor and cell index', async (t: Any) => {
     const { doc } = await setup(t);
 
     assert.equal(doc.querySelectorAll('.greenline-cell').length, 5);
@@ -230,7 +231,7 @@ if (!gameFileExists) {
     return data;
   }
 
-  test('jsdom: a floor with 8 pots has 6 cells on its first line and 2 on the next', async (t) => {
+  test('jsdom: a floor with 8 pots has 6 cells on its first line and 2 on the next', async (t: Any) => {
     const { doc } = await setup(t, { pots: eightPotFloor() });
 
     assert.deepEqual(gridPlace(doc.querySelector('.greenline-floor-label[data-floor-id="1"]')), ['2 / span 2', '1']);
@@ -239,7 +240,7 @@ if (!gameFileExists) {
     assert.deepEqual(gridPlace(cell(doc, 2007)), ['3', '3']);
   });
 
-  test('jsdom: the popover has cell columns for the longest line only', async (t) => {
+  test('jsdom: the popover has cell columns for the longest line only', async (t: Any) => {
     const small = await setup(t);
     assert.match(small.doc.querySelector('.mature-popover').style.getPropertyValue('grid-template-columns'), /repeat\(3,/);
 
@@ -247,27 +248,27 @@ if (!gameFileExists) {
     assert.match(big.doc.querySelector('.mature-popover').style.getPropertyValue('grid-template-columns'), /repeat\(6,/);
   });
 
-  test('jsdom: a second setPots with the same data writes nothing to the DOM', async (t) => {
+  test('jsdom: a second setPots with the same data writes nothing to the DOM', async (t: Any) => {
     const { doc, core, root } = await setup(t);
     // The first frames write the first countdown texts.
     await wait(core, 60);
 
-    const records = [];
-    const observer = new core.MutationObserver((list) => records.push(...list));
+    const records: Any[] = [];
+    const observer = new core.MutationObserver((list: Any) => records.push(...list));
     observer.observe(doc.documentElement, { childList: true, subtree: true, attributes: true, attributeOldValue: true, characterData: true });
     setPots(root, fixture());
     await wait(core, 30);
     observer.disconnect();
 
     // The game's own countdown writes the text of its rows on each frame; only the mod's writes count.
-    const ours = records.filter((r) => {
+    const ours = records.filter((r: Any) => {
       const el = r.target.nodeType === 1 ? r.target : r.target.parentElement;
       return !(el && el.closest('.mature-item-row'));
     });
-    assert.equal(ours.length, 0, `unexpected writes: ${ours.map((r) => r.type + ' ' + r.attributeName + ' old=' + r.oldValue + ' ' + (r.target.className || r.target.nodeName)).join(', ')}`);
+    assert.equal(ours.length, 0, `unexpected writes: ${ours.map((r: Any) => r.type + ' ' + r.attributeName + ' old=' + r.oldValue + ' ' + (r.target.className || r.target.nodeName)).join(', ')}`);
   });
 
-  async function collapse(coreWindow) {
+  async function collapse(coreWindow?: Any) {
     coreWindow.eval('state.maturePlantsExpanded = false');
     for (let i = 0; i < 50; i++) {
       await wait(coreWindow, 20);
@@ -276,8 +277,8 @@ if (!gameFileExists) {
     throw new Error('the popover leave transition did not end within 1s');
   }
 
-  function cellPlaces(doc) {
-    const places = {};
+  function cellPlaces(doc?: Any) {
+    const places: Record<string, Any> = {};
     for (const c of doc.querySelectorAll('.greenline-cell')) {
       const id = c.getAttribute('data-pot-id');
       assert.equal(places[id], undefined, `pot ${id} has more than one cell`);
@@ -286,7 +287,7 @@ if (!gameFileExists) {
     return places;
   }
 
-  test('jsdom: a collapse and an expand bring the grid back', async (t) => {
+  test('jsdom: a collapse and an expand bring the grid back', async (t: Any) => {
     const { doc, core } = await setup(t);
     const before = cellPlaces(doc);
 
@@ -298,7 +299,7 @@ if (!gameFileExists) {
     assert.equal(doc.querySelectorAll('.greenline-floor-label').length, 2);
   });
 
-  test('jsdom: a row added or removed by the game keeps each cell in its place', async (t) => {
+  test('jsdom: a row added or removed by the game keeps each cell in its place', async (t: Any) => {
     const { doc, core } = await setup(t);
     const before = cellPlaces(doc);
 
@@ -308,7 +309,7 @@ if (!gameFileExists) {
     assert.deepEqual(cellPlaces(doc), before);
   });
 
-  test('jsdom: when the game list goes away, no mod node stays', async (t) => {
+  test('jsdom: when the game list goes away, no mod node stays', async (t: Any) => {
     const { doc, core } = await setup(t);
 
     await postPlants(core, []);
@@ -317,27 +318,27 @@ if (!gameFileExists) {
     assert.equal(doc.querySelectorAll('.greenline-cell, .greenline-floor-label').length, 0);
   });
 
-  test('jsdom: a countdown text write of the game triggers no work of the observer', async (t) => {
+  test('jsdom: a countdown text write of the game triggers no work of the observer', async (t: Any) => {
     const { core } = await setup(t);
     const originalEval = core.eval.bind(core);
     let stateReads = 0;
-    core.eval = (code) => { if (code === 'state') stateReads++; return originalEval(code); };
+    core.eval = (code: Any) => { if (code === 'state') stateReads++; return originalEval(code); };
 
     // The withered row: the game's own countdown loop does not rewrite its text.
     originalEval('state.maturePlants.find((p) => p.status === 2).remainText = "9:99"');
     await wait(core, 50);
 
-    const texts = [...core.document.querySelectorAll('.mature-item-row .mature-item-remain')].map((e) => e.textContent);
+    const texts = [...core.document.querySelectorAll('.mature-item-row .mature-item-remain')].map((e: Any) => e.textContent);
     assert.ok(texts.includes('9:99'), `the game did not write the text: ${texts}`);
     assert.equal(stateReads, 0);
   });
 
-  function iconSrc(el, selector) {
+  function iconSrc(el?: Any, selector?: Any) {
     const img = el.querySelector(selector);
     return img ? img.getAttribute('src') : null;
   }
 
-  test('jsdom: a crop cell has the crop icon, and an empty or Poor pot cell has the pot icon', async (t) => {
+  test('jsdom: a crop cell has the crop icon, and an empty or Poor pot cell has the pot icon', async (t: Any) => {
     const { doc } = await setup(t);
     const pots = fixture().pots;
 
@@ -349,7 +350,7 @@ if (!gameFileExists) {
     assert.equal(cell(doc, 1001).querySelector('.greenline-till'), null);
   });
 
-  test('jsdom: a cell with a badge has the game icon of that problem', async (t) => {
+  test('jsdom: a cell with a badge has the game icon of that problem', async (t: Any) => {
     const { doc } = await setup(t);
 
     assert.equal(iconSrc(cell(doc, 1001), '.greenline-badge'), '../../Res/PlantAnomaly/Pest.png');
@@ -358,16 +359,16 @@ if (!gameFileExists) {
     assert.equal(cell(doc, 1003).querySelector('.greenline-badge'), null);
   });
 
-  test('jsdom: only a mature cell has the gold border, and only a Pest or Frost cell is urgent', async (t) => {
+  test('jsdom: only a mature cell has the gold border, and only a Pest or Frost cell is urgent', async (t: Any) => {
     const { doc } = await setup(t);
 
-    const mature = [...doc.querySelectorAll('.greenline-cell.greenline-mature')].map((c) => c.getAttribute('data-pot-id'));
-    const urgent = [...doc.querySelectorAll('.greenline-cell.greenline-urgent')].map((c) => c.getAttribute('data-pot-id'));
+    const mature = [...doc.querySelectorAll('.greenline-cell.greenline-mature')].map((c: Any) => c.getAttribute('data-pot-id'));
+    const urgent = [...doc.querySelectorAll('.greenline-cell.greenline-urgent')].map((c: Any) => c.getAttribute('data-pot-id'));
     assert.deepEqual(mature, ['1002']);
     assert.deepEqual(urgent, ['1001']);
   });
 
-  test('jsdom: a Frost crop is urgent, and a crop with Drought only is not', async (t) => {
+  test('jsdom: a Frost crop is urgent, and a crop with Drought only is not', async (t: Any) => {
     const data = fixture();
     data.pots['1001'].problems = ['frost'];
     data.pots['1001'].badge = 'frost';
@@ -381,7 +382,7 @@ if (!gameFileExists) {
     assert.equal(iconSrc(cell(doc, 1002), '.greenline-badge'), '../../Res/PlantAnomaly/Drought.png');
   });
 
-  test('jsdom: a growing crop with a problem that only stops its growth has the red border, not the pulse', async (t) => {
+  test('jsdom: a growing crop with a problem that only stops its growth has the red border, not the pulse', async (t: Any) => {
     const data = fixture();
     data.pots['1002'].state = 'growing';
     data.pots['1002'].problems = ['weed'];
@@ -390,11 +391,11 @@ if (!gameFileExists) {
 
     assert.ok(cell(doc, 1002).classList.contains('greenline-problem'));
     assert.ok(!cell(doc, 1002).classList.contains('greenline-urgent'));
-    const problem = [...doc.querySelectorAll('.greenline-cell.greenline-problem')].map((c) => c.getAttribute('data-pot-id'));
+    const problem = [...doc.querySelectorAll('.greenline-cell.greenline-problem')].map((c: Any) => c.getAttribute('data-pot-id'));
     assert.deepEqual(problem, ['1002'], 'a Pest crop, an empty pot, a withered crop, and a Poor pot have no problem border');
   });
 
-  test('jsdom: a growing crop that only stops its growth shows the pause mark in place of the countdown', async (t) => {
+  test('jsdom: a growing crop that only stops its growth shows the pause mark in place of the countdown', async (t: Any) => {
     const data = fixture();
     data.words = { stateStalled: 'Stagnant' };
     data.pots['1002'].state = 'growing';
@@ -409,10 +410,10 @@ if (!gameFileExists) {
   });
 
   const BASIC_FERT_ICON = '../../Res/Material/UI_Item_Icon_Mat_S_1500710801.png';
-  const BADGE_ICONS_OF = { pest: '../../Res/PlantAnomaly/Pest.png', frost: '../../Res/PlantAnomaly/Frost.png' };
+  const BADGE_ICONS_OF: Record<string, string> = { pest: '../../Res/PlantAnomaly/Pest.png', frost: '../../Res/PlantAnomaly/Frost.png' };
 
   // A growing research crop in pot 1002 with its problems, and its game row with the status.
-  function researchData(problems) {
+  function researchData(problems?: Any) {
     const data = fixture();
     const pot = data.pots['1002'];
     pot.state = 'growing';
@@ -424,7 +425,7 @@ if (!gameFileExists) {
     return data;
   }
 
-  test('jsdom: a research crop that needs fertilizer has the Basic Fertilizer badge, the pause mark, and the red border', async (t) => {
+  test('jsdom: a research crop that needs fertilizer has the Basic Fertilizer badge, the pause mark, and the red border', async (t: Any) => {
     const { doc, core } = await setup(t, { pots: researchData(['needFert']), rows: [plant(5001, 3, 7200, 0), plant(5002, 8, 3600, 0), plant(5004, 2)] });
     await wait(core, 60);
 
@@ -436,11 +437,11 @@ if (!gameFileExists) {
   });
 
   for (const [problem, status] of [['pest', 9], ['frost', 10]]) {
-    test(`jsdom: a research crop with ${problem} has its badge, the pause mark, and the red border, and is not urgent`, async (t) => {
+    test(`jsdom: a research crop with ${problem} has its badge, the pause mark, and the red border, and is not urgent`, async (t: Any) => {
       const { doc, core } = await setup(t, { pots: researchData([problem]), rows: [plant(5001, 3, 7200, 0), plant(5002, status, 3600, 0), plant(5004, 2)] });
       await wait(core, 60);
 
-      assert.equal(iconSrc(cell(doc, 1002), '.greenline-badge'), BADGE_ICONS_OF[problem]);
+      assert.equal(iconSrc(cell(doc, 1002), '.greenline-badge'), BADGE_ICONS_OF[problem as string]);
       assert.equal(cell(doc, 1002).querySelectorAll(':scope > .greenline-pause i').length, 2);
       assert.equal(timeText(doc, 1002), null);
       assert.ok(cell(doc, 1002).classList.contains('greenline-problem'));
@@ -449,18 +450,18 @@ if (!gameFileExists) {
     });
   }
 
-  test('jsdom: a cell shows no crop name', async (t) => {
+  test('jsdom: a cell shows no crop name', async (t: Any) => {
     const { doc } = await setup(t);
 
     // The hover card is hidden until the pointer is on the cell, so only the rest counts.
     for (const c of doc.querySelectorAll('.greenline-cell')) {
-      const shown = [...c.childNodes].filter((n) => !(n.classList && n.classList.contains('entry-tip')))
-        .map((n) => n.textContent).join('');
+      const shown = [...c.childNodes].filter((n: Any) => !(n.classList && n.classList.contains('entry-tip')))
+        .map((n: Any) => n.textContent).join('');
       assert.ok(!shown.includes('Watermelon') && !shown.includes('Planter'), shown);
     }
   });
 
-  test('jsdom: a new state of a pot changes its cell content, not its place', async (t) => {
+  test('jsdom: a new state of a pot changes its cell content, not its place', async (t: Any) => {
     const { doc, root } = await setup(t);
     const before = cellPlaces(doc);
     const data = fixture();
@@ -476,9 +477,9 @@ if (!gameFileExists) {
     assert.deepEqual(cellPlaces(doc), before);
   });
 
-  test('shortTime: days and hours, hours and minutes, or minutes, in English and Chinese', async (t) => {
+  test('shortTime: days and hours, hours and minutes, or minutes, in English and Chinese', async (t: Any) => {
     const { root } = await setup(t);
-    const short = (s, lang) => runPageJs(root, `window.__greenline.shortTime(${s}, '${lang}')`);
+    const short = (s: Any, lang: Any) => runPageJs(root, `window.__greenline.shortTime(${s}, '${lang}')`);
 
     assert.equal(short(86400 + 5 * 3600 + 6 * 60, 'en'), '1d5h');
     assert.equal(short(5 * 3600 + 6 * 60 + 30, 'en'), '5:06');
@@ -490,9 +491,9 @@ if (!gameFileExists) {
     assert.equal(short(45 * 60, 'zh'), '45分');
   });
 
-  test('fullTime: the days, hours, and minutes, in English and Chinese', async (t) => {
+  test('fullTime: the days, hours, and minutes, in English and Chinese', async (t: Any) => {
     const { root } = await setup(t);
-    const full = (s, lang) => runPageJs(root, `window.__greenline.fullTime(${s}, '${lang}')`);
+    const full = (s: Any, lang: Any) => runPageJs(root, `window.__greenline.fullTime(${s}, '${lang}')`);
 
     assert.equal(full(86400 + 5 * 3600 + 6 * 60, 'en'), '1 d 5 h 6 min');
     assert.equal(full(5 * 3600 + 6 * 60, 'en'), '5 h 6 min');
@@ -501,17 +502,17 @@ if (!gameFileExists) {
     assert.equal(full(45 * 60, 'zh'), '45分');
   });
 
-  function timeText(doc, potId) {
+  function timeText(doc?: Any, potId?: Any) {
     const el = cell(doc, potId).querySelector('.greenline-time');
     return el ? el.textContent : null;
   }
 
   // Sets the countdown of a game row, as the game's own frame loop keeps it.
-  function setRemain(core, rowId, seconds) {
+  function setRemain(core?: Any, rowId?: Any, seconds?: Any) {
     core.eval(`state.maturePlants.find((p) => p.showInstanceId === ${rowId}).remainGameSeconds = ${seconds}`);
   }
 
-  test('jsdom: a cell shows the countdown of its game row, only for a status with a countdown', async (t) => {
+  test('jsdom: a cell shows the countdown of its game row, only for a status with a countdown', async (t: Any) => {
     const { doc, core, root } = await setup(t);
 
     setRemain(core, 5001, 5 * 3600 + 6 * 60 + 30);
@@ -525,7 +526,7 @@ if (!gameFileExists) {
     assert.equal(timeText(doc, 1005), null, 'a Poor pot has no countdown');
   });
 
-  test('jsdom: step() writes the countdown of a cell from its game row', async (t) => {
+  test('jsdom: step() writes the countdown of a cell from its game row', async (t: Any) => {
     const { doc, core, root } = await setup(t);
 
     setRemain(core, 5001, 2 * 3600 + 7 * 60 + 30);
@@ -534,7 +535,7 @@ if (!gameFileExists) {
     assert.equal(timeText(doc, 1001), '2:07');
   });
 
-  test('jsdom: check() is ok on an applied frame, and not applied on a frame the game built again', async (t) => {
+  test('jsdom: check() is ok on an applied frame, and not applied on a frame the game built again', async (t: Any) => {
     const { root } = await setup(t);
     assert.equal(root.__greenline.check(), 'ok');
 
@@ -544,13 +545,13 @@ if (!gameFileExists) {
     assert.equal(fresh.__greenline.check(), 'not applied');
   });
 
-  test('jsdom: the mod registers no requestAnimationFrame callback', async (t) => {
+  test('jsdom: the mod registers no requestAnimationFrame callback', async (t: Any) => {
     const core = await loadCoreWindow(t);
     await postPlants(core, FIXTURE_ROWS);
     await expand(core);
     const modCallbacks = [];
     const raf = core.requestAnimationFrame.bind(core);
-    core.requestAnimationFrame = (cb) => {
+    core.requestAnimationFrame = (cb: Any) => {
       if (/updateCountdowns/.test(String(cb))) modCallbacks.push(cb);
       return raf(cb);
     };
@@ -561,21 +562,21 @@ if (!gameFileExists) {
     assert.equal(modCallbacks.length, 0);
   });
 
-  test('jsdom: a stalled crop (status 6) shows no countdown', async (t) => {
+  test('jsdom: a stalled crop (status 6) shows no countdown', async (t: Any) => {
     const { doc, core } = await setup(t, { rows: [plant(5001, 6, 7200, 0), plant(5002, 1, 3600, 0), plant(5004, 2)] });
     await wait(core, 60);
 
     assert.equal(timeText(doc, 1001), null);
   });
 
-  test('jsdom: the countdown writes its text only when the text changes', async (t) => {
+  test('jsdom: the countdown writes its text only when the text changes', async (t: Any) => {
     const { doc, core, root } = await setup(t);
     setRemain(core, 5001, 5 * 3600 + 6 * 60 + 50);
     root.__greenline.step();
     const time = cell(doc, 1001).querySelector('.greenline-time');
 
-    const records = [];
-    const observer = new core.MutationObserver((list) => records.push(...list));
+    const records: Any[] = [];
+    const observer = new core.MutationObserver((list: Any) => records.push(...list));
     observer.observe(time, { childList: true, subtree: true, characterData: true });
     root.__greenline.step();
     root.__greenline.step();
@@ -590,16 +591,17 @@ if (!gameFileExists) {
     assert.equal(records.length, 1);
   });
 
-  // The hover card of a cell: the header and the key rows.
-  // The pointer moves over the cell (the page gets pointer moves over the HUD parts).
-  function hoverCell(doc, potId, x, y) {
+  // The pot card of a cell: the pointer comes onto the cell. jsdom has no layout, so a test that reads
+  // the place gives the cell its rect.
+  function hoverCell(doc?: Any, potId?: Any, rect?: Any) {
     const c = cell(doc, potId);
-    c.dispatchEvent(new doc.defaultView.MouseEvent('mousemove', { bubbles: true, clientX: x || 50, clientY: y || 60 }));
+    if (rect) c.getBoundingClientRect = () => ({ ...rect, width: rect.right - rect.left, height: rect.bottom - rect.top });
+    c.dispatchEvent(new doc.defaultView.MouseEvent('mouseenter', { clientX: 50, clientY: 60 }));
     return c;
   }
 
-  // The card of a cell: the one card node of the frame shows it next to the pointer.
-  function card(doc, potId) {
+  // The card of a cell: the one card node of the frame shows it next to the cell.
+  function card(doc?: Any, potId?: Any) {
     hoverCell(doc, potId);
     const node = hoverNode(doc);
     assert.ok(node && !node.hidden, 'the card shows');
@@ -607,12 +609,12 @@ if (!gameFileExists) {
   }
 
   // The header and rows of the card in an element (a grid cell or the world hover node).
-  function readCard(el) {
+  function readCard(el?: Any) {
     const tip = el.querySelector(':scope > .entry-tip');
     assert.ok(tip, 'the element has its card');
-    const chipOf = (el) => {
+    const chipOf = (el: Any) => {
       const cells = el && el.querySelector('.greenline-chip .cells');
-      return cells ? [[...cells.classList].find((k) => /^s\d$/.test(k)), cells.querySelectorAll('.cell').length] : null;
+      return cells ? [[...cells.classList].find((k: Any) => /^s\d$/.test(k)), cells.querySelectorAll('.cell').length] : null;
     };
     const head = tip.querySelector('.greenline-card-head');
     const name = head.querySelector('.greenline-card-name');
@@ -624,10 +626,10 @@ if (!gameFileExists) {
         chip: chipOf(name),
         sub: sub ? sub.querySelector('.greenline-card-text').textContent : null,
         subIcon: sub && sub.querySelector('img') ? sub.querySelector('img').getAttribute('src') : null,
-        subOrder: sub && sub.querySelector('.greenline-card-pill') ? [...sub.querySelector('.greenline-card-pill').children].map((e) => e.className || e.tagName) : null,
+        subOrder: sub && sub.querySelector('.greenline-card-pill') ? [...sub.querySelector('.greenline-card-pill').children].map((e: Any) => e.className || e.tagName) : null,
         subChip: chipOf(sub)
       },
-      rows: [...tip.querySelectorAll('.greenline-card-row')].map((row) => {
+      rows: [...tip.querySelectorAll('.greenline-card-row')].map((row: Any) => {
         const value = row.querySelector('.greenline-card-value');
         const img = value.querySelector('img');
         const bar = value.querySelector('.greenline-bar');
@@ -635,10 +637,10 @@ if (!gameFileExists) {
           key: row.querySelector('.greenline-card-key').textContent,
           icon: img ? img.getAttribute('src') : null,
           text: value.textContent,
-          classes: [...value.classList].filter((k) => k !== 'greenline-card-value'),
+          classes: [...value.classList].filter((k: Any) => k !== 'greenline-card-value'),
           bar: bar ? {
             fill: bar.querySelector('.greenline-bar-fill').style.width,
-            kind: [...bar.classList].filter((k) => k !== 'greenline-bar'),
+            kind: [...bar.classList].filter((k: Any) => k !== 'greenline-bar'),
             pause: !!bar.querySelector('.greenline-pause')
           } : null
         };
@@ -646,17 +648,17 @@ if (!gameFileExists) {
     };
   }
 
-  function rowsWith(c, key) {
-    return c.rows.filter((r) => r.key === key);
+  function rowsWith(c?: Any, key?: Any) {
+    return c.rows.filter((r: Any) => r.key === key);
   }
 
-  function rowWith(c, key) {
+  function rowWith(c?: Any, key?: Any) {
     const found = rowsWith(c, key);
     assert.equal(found.length, 1, `one "${key}" row in ${JSON.stringify(c.rows)}`);
     return found[0];
   }
 
-  test('jsdom: the card of a crop has the crop and the pot (with a small pot icon) as its header, each with its size chip', async (t) => {
+  test('jsdom: the card of a crop has the crop and the pot (with a small pot icon) as its header, each with its size chip', async (t: Any) => {
     const { doc } = await setup(t);
     const c = card(doc, 1001);
 
@@ -667,7 +669,7 @@ if (!gameFileExists) {
     });
   });
 
-  test('jsdom: each problem is its own red State row, and a stalled growth bar is red with the pause mark', async (t) => {
+  test('jsdom: each problem is its own red State row, and a stalled growth bar is red with the pause mark', async (t: Any) => {
     const { doc, core } = await setup(t);
     setRemain(core, 5001, 3600 + 5 * 60 + 50);
     await wait(core, 60);
@@ -686,7 +688,7 @@ if (!gameFileExists) {
     assert.equal(growth.text, '1 d 5 h', 'no minutes when a day or more is left');
   });
 
-  test('jsdom: a growing crop with no problem shows Growing and a green growth bar', async (t) => {
+  test('jsdom: a growing crop with no problem shows Growing and a green growth bar', async (t: Any) => {
     const data = fixture();
     data.pots['1001'].problems = [];
     data.pots['1001'].badge = '';
@@ -709,7 +711,7 @@ if (!gameFileExists) {
     return data;
   }
 
-  test('jsdom: the growth bar of a crop with no problem follows the countdown of its game row, with no new pot data', async (t) => {
+  test('jsdom: the growth bar of a crop with no problem follows the countdown of its game row, with no new pot data', async (t: Any) => {
     const { doc, core } = await setup(t, { pots: noProblemData(), rows: [plant(5001, 0, 7200, 0), plant(5002, 1, 3600, 0), plant(5004, 2)] });
 
     setRemain(core, 5001, 105960);
@@ -724,7 +726,7 @@ if (!gameFileExists) {
   });
 
   for (const status of [0, 3, 5]) {
-    test(`jsdom: the growth bar of a crop with a problem in the pot data stays still with a game row of status ${status}`, async (t) => {
+    test(`jsdom: the growth bar of a crop with a problem in the pot data stays still with a game row of status ${status}`, async (t: Any) => {
       const { doc, core } = await setup(t, { rows: [plant(5001, status, 7200, 0), plant(5002, 1, 3600, 0), plant(5004, 2)] });
 
       setRemain(core, 5001, 3000);
@@ -742,18 +744,18 @@ if (!gameFileExists) {
     ['a game row of status 5', [plant(5001, 5, 7200, 0), plant(5002, 1, 3600, 0), plant(5004, 2)]],
     ['no game row', [plant(5002, 1, 3600, 0), plant(5004, 2)]]
   ]) {
-    test(`jsdom: a crop with no problem in the pot data but ${name} has no growth bar`, async (t) => {
+    test(`jsdom: a crop with no problem in the pot data but ${name} has no growth bar`, async (t: Any) => {
       const { doc } = await setup(t, { pots: noProblemData(), rows });
 
       assert.equal(rowsWith(card(doc, 1001), 'Growth').length, 0);
     });
   }
 
-  test('jsdom: the fertilizer row has the icon and name, or a grey None with no icon, then the auto value', async (t) => {
+  test('jsdom: the fertilizer row has the icon and name, or a grey None with no icon, then the auto value', async (t: Any) => {
     const { doc } = await setup(t);
 
-    const parts = () => [...hoverNode(doc).querySelectorAll('.greenline-fert-name, .greenline-fert-auto')]
-      .map((e) => [e.textContent, e.classList.contains('greenline-muted')]);
+    const parts = (_pot?: Any) => [...hoverNode(doc).querySelectorAll('.greenline-fert-name, .greenline-fert-auto')]
+      .map((e: Any) => [e.textContent, e.classList.contains('greenline-muted')]);
 
     const fert = rowWith(card(doc, 1001), 'Fertilizer');
     assert.equal(fert.icon, '../../Res/Material/UI_Item_Icon_Mat_S_1500310101.png');
@@ -764,13 +766,13 @@ if (!gameFileExists) {
     assert.deepEqual(parts(1002), [['None', true], ['(auto: off)', true]], 'None and auto off are grey');
   });
 
-  test('jsdom: the fertilizer row shows the dose of a part dose after the name, and no dose for a full dose', async (t) => {
+  test('jsdom: the fertilizer row shows the dose of a part dose after the name, and no dose for a full dose', async (t: Any) => {
     const data = fixture();
     data.pots['1001'].fertDose = '1/4';
     const { doc } = await setup(t, { pots: data });
 
-    const parts = () => [...hoverNode(doc).querySelectorAll('.greenline-card-row .greenline-card-value > span')]
-      .map((e) => [e.className, e.textContent]).filter(([cls]) => /greenline-fert/.test(cls));
+    const parts = (_pot?: Any) => [...hoverNode(doc).querySelectorAll('.greenline-card-row .greenline-card-value > span')]
+      .map((e: Any) => [e.className, e.textContent]).filter(([cls]) => /greenline-fert/.test(cls));
 
     card(doc, 1001);
     assert.deepEqual(parts(), [
@@ -780,12 +782,12 @@ if (!gameFileExists) {
     assert.deepEqual(parts().map(([cls]) => cls), ['greenline-fert-name greenline-muted', 'greenline-fert-auto greenline-muted']);
   });
 
-  test('jsdom: a long fertilizer name is cut with an ellipsis, and the dose and the auto value stay whole', async (t) => {
+  test('jsdom: a long fertilizer name is cut with an ellipsis, and the dose and the auto value stay whole', async (t: Any) => {
     const data = fixture();
     data.pots['1001'].fertDose = '1/4';
     const { doc, core } = await setup(t, { pots: data });
     card(doc, 1001);
-    const style = (sel) => core.getComputedStyle(hoverNode(doc).querySelector(sel));
+    const style = (sel: Any) => core.getComputedStyle(hoverNode(doc).querySelector(sel));
 
     assert.equal(style('.greenline-card-rows').gridTemplateColumns, 'auto minmax(0, 1fr)');
     const name = style('.greenline-fert-name');
@@ -794,7 +796,7 @@ if (!gameFileExists) {
     assert.equal(style('.greenline-fert-auto').flexShrink, '0');
   });
 
-  test('jsdom: the Auto-replant row is a white On or a grey Off', async (t) => {
+  test('jsdom: the Auto-replant row is a white On or a grey Off', async (t: Any) => {
     const { doc } = await setup(t);
 
     const on = rowWith(card(doc, 1001), 'Auto-replant');
@@ -805,7 +807,7 @@ if (!gameFileExists) {
     assert.ok(off.classes.includes('greenline-muted'));
   });
 
-  test('jsdom: a ripe crop shows the gold ripe icon and a gold harvest bar with the game word as its key', async (t) => {
+  test('jsdom: a ripe crop shows the gold ripe icon and a gold harvest bar with the game word as its key', async (t: Any) => {
     const { doc, core } = await setup(t);
     core.eval("state.i18n_plantHarvest = 'Harvest '");
     setRemain(core, 5002, 45 * 60 + 30);
@@ -822,7 +824,7 @@ if (!gameFileExists) {
     assert.equal(rowsWith(c, 'Growth').length, 0);
   });
 
-  test('jsdom: the card of a research crop that needs fertilizer has a red State row with the Basic Fertilizer icon and no time', async (t) => {
+  test('jsdom: the card of a research crop that needs fertilizer has a red State row with the Basic Fertilizer icon and no time', async (t: Any) => {
     const data = researchData(['needFert']);
     data.words = { problemNeedFert: 'Stagnant: Needs Fertilizer' };
     const { doc, core } = await setup(t, { pots: data, rows: [plant(5001, 3, 7200, 0), plant(5002, 8, 3600, 0), plant(5004, 2)] });
@@ -836,7 +838,7 @@ if (!gameFileExists) {
     assert.deepEqual(rowWith(c, 'Growth').bar, { fill: '50%', kind: ['greenline-stalled'], pause: true });
   });
 
-  test('jsdom: the card of a research crop with Pest has a red Pest State row with no time', async (t) => {
+  test('jsdom: the card of a research crop with Pest has a red Pest State row with no time', async (t: Any) => {
     const { doc, core } = await setup(t, { pots: researchData(['pest']), rows: [plant(5001, 3, 7200, 0), plant(5002, 9, 3600, 0), plant(5004, 2)] });
     setRemain(core, 5002, 3600 + 5 * 60 + 50);
     const c = card(doc, 1002);
@@ -846,7 +848,7 @@ if (!gameFileExists) {
     assert.ok(state.classes.includes('greenline-red'));
   });
 
-  test('jsdom: a mature crop with no harvest window has the gold border and the gold State row, and no countdown or harvest bar', async (t) => {
+  test('jsdom: a mature crop with no harvest window has the gold border and the gold State row, and no countdown or harvest bar', async (t: Any) => {
     const data = fixture();
     data.pots['1002'].neverWithers = true;
     const { doc, core, root } = await setup(t, { pots: data, rows: [plant(5001, 3, 7200, 0), plant(5002, 1, 0, 0), plant(5004, 2)] });
@@ -861,15 +863,15 @@ if (!gameFileExists) {
     assert.equal(rowsWith(c, 'Harvest').length, 0);
   });
 
-  test('jsdom: the card of an empty pot has the pot header, no State row, and no growth bar', async (t) => {
+  test('jsdom: the card of an empty pot has the pot header, no State row, and no growth bar', async (t: Any) => {
     const { doc } = await setup(t);
     const c = card(doc, 1003);
 
     assert.deepEqual(c.head, { icon: '../../Res/Furniture/UI_Item_Icon_plantcommon_small.png', name: 'Small Planter', chip: ['s1', 1], sub: null, subIcon: null, subOrder: null, subChip: null });
-    assert.deepEqual(c.rows.map((r) => [r.key, r.text]), [['Fertilizer', 'None(auto: on)'], ['Auto-replant', 'On']]);
+    assert.deepEqual(c.rows.map((r: Any) => [r.key, r.text]), [['Fertilizer', 'None(auto: on)'], ['Auto-replant', 'On']]);
   });
 
-  test('jsdom: a Poor pot shows its state with the Till mark, and a medium pot has the s2 chip', async (t) => {
+  test('jsdom: a Poor pot shows its state with the Till mark, and a medium pot has the s2 chip', async (t: Any) => {
     const { doc } = await setup(t);
     const c = card(doc, 1005);
 
@@ -879,15 +881,15 @@ if (!gameFileExists) {
     assert.ok(state.icon);
   });
 
-  test('jsdom: a withered crop shows Withered and no growth bar', async (t) => {
+  test('jsdom: a withered crop shows Withered and no growth bar', async (t: Any) => {
     const { doc } = await setup(t);
     const c = card(doc, 1004);
 
     assert.equal(rowWith(c, 'State').text, 'Withered');
-    assert.equal(c.rows.filter((r) => r.bar).length, 0);
+    assert.equal(c.rows.filter((r: Any) => r.bar).length, 0);
   });
 
-  test('jsdom: the Chinese card uses the words of the pot data', async (t) => {
+  test('jsdom: the Chinese card uses the words of the pot data', async (t: Any) => {
     const data = fixture();
     data.lang = 'zh';
     data.words = { labelFertilizer: '肥料', valueNone: '无', autoOff: '（自动：关）', labelState: '状态', stateMature: '成熟' };
@@ -897,9 +899,9 @@ if (!gameFileExists) {
     assert.equal(rowWith(card(doc, 1002), '状态').text, '成熟');
   });
 
-  async function clickCell(doc, core, root, potId) {
-    const received = [];
-    const listener = (e) => received.push(e.data);
+  async function clickCell(doc?: Any, core?: Any, root?: Any, potId?: Any) {
+    const received: Any[] = [];
+    const listener = (e: Any) => received.push(e.data);
     root.addEventListener('message', listener);
     cell(doc, potId).dispatchEvent(new core.MouseEvent('click', { bubbles: true }));
     await wait(root, 30);
@@ -907,7 +909,7 @@ if (!gameFileExists) {
     return received;
   }
 
-  test('jsdom: a click on a crop cell posts the row click of the game with the click id of the pot', async (t) => {
+  test('jsdom: a click on a crop cell posts the row click of the game with the click id of the pot', async (t: Any) => {
     const { doc, core, root } = await setup(t);
 
     const received = await clickCell(doc, core, root, 1001);
@@ -918,29 +920,29 @@ if (!gameFileExists) {
     assert.deepEqual({ ...received[0].data }, { instanceId: 5001 });
   });
 
-  test('jsdom: a click on an empty or Poor pot cell also posts the row click, with its click id', async (t) => {
+  test('jsdom: a click on an empty or Poor pot cell also posts the row click, with its click id', async (t: Any) => {
     const { doc, core, root } = await setup(t);
 
     const empty = await clickCell(doc, core, root, 1003);
     const poor = await clickCell(doc, core, root, 1005);
 
-    assert.deepEqual(empty.map((m) => [m.type, m.data.instanceId]), [['PLANT_MATURE_CLICK', 5003]]);
-    assert.deepEqual(poor.map((m) => [m.type, m.data.instanceId]), [['PLANT_MATURE_CLICK', 5005]]);
+    assert.deepEqual(empty.map((m: Any) => [m.type, m.data.instanceId]), [['PLANT_MATURE_CLICK', 5003]]);
+    assert.deepEqual(poor.map((m: Any) => [m.type, m.data.instanceId]), [['PLANT_MATURE_CLICK', 5005]]);
   });
 
-  function assertGridGone(doc, core) {
+  function assertGridGone(doc?: Any, core?: Any) {
     assert.equal(doc.querySelectorAll('.greenline-cell, .greenline-floor-label, .greenline-grid').length, 0);
     for (const row of doc.querySelectorAll('.mature-item-row')) assert.notEqual(core.getComputedStyle(row).display, 'none');
   }
 
-  test('jsdom: with no pot data the grid is removed and the game rows show again', async (t) => {
+  test('jsdom: with no pot data the grid is removed and the game rows show again', async (t: Any) => {
     const { doc, core, root } = await setup(t);
 
     assert.equal(setPots(root, null), 'installed');
     assertGridGone(doc, core);
   });
 
-  test('jsdom: a missing part turns the grid off and install() names it', async (t) => {
+  test('jsdom: a missing part turns the grid off and install() names it', async (t: Any) => {
     const { doc, core, root } = await setup(t);
 
     // Simulates a game update that renamed the class of the game rows.
@@ -952,7 +954,7 @@ if (!gameFileExists) {
   });
 
   // The plant list message with the game's own Patrol values, as the header reads them.
-  async function postPatrol(coreWindow, unlocked, replantOn) {
+  async function postPatrol(coreWindow?: Any, unlocked?: Any, replantOn?: Any) {
     coreWindow.postMessage({
       type: 'WebUI_CoreUI1_PlantMatureMsg',
       data: { patrolUnlocked: unlocked, replantOn: replantOn }
@@ -960,9 +962,9 @@ if (!gameFileExists) {
     await wait(coreWindow, 30);
   }
 
-  function tendButton(doc) { return doc.querySelector('.mature-toggle-row .greenline-tend-btn'); }
+  function tendButton(doc?: Any) { return doc.querySelector('.mature-toggle-row .greenline-tend-btn'); }
 
-  test('jsdom: a Tend All button shows before the chevron while a chore waits', async (t) => {
+  test('jsdom: a Tend All button shows before the chevron while a chore waits', async (t: Any) => {
     const { doc } = await setup(t);
 
     const btn = tendButton(doc);
@@ -972,7 +974,7 @@ if (!gameFileExists) {
     assert.ok(btn.hasAttribute('data-interactive'));
   });
 
-  test('jsdom: no Tend All button with no chore or with no Patrol', async (t) => {
+  test('jsdom: no Tend All button with no chore or with no Patrol', async (t: Any) => {
     const { doc, root } = await setup(t);
 
     setPots(root, Object.assign(fixture(), { pendingChores: 0 }));
@@ -981,19 +983,19 @@ if (!gameFileExists) {
     assert.equal(tendButton(doc), null);
   });
 
-  test('jsdom: a Tend All click posts the game Patrol request and does not toggle the list', async (t) => {
+  test('jsdom: a Tend All click posts GREENLINE_TEND and does not toggle the list', async (t: Any) => {
     const { doc, core, root } = await setup(t);
-    const received = [];
-    root.addEventListener('message', (e) => received.push(e.data));
+    const received: Any[] = [];
+    root.addEventListener('message', (e: Any) => received.push(e.data));
 
     tendButton(doc).dispatchEvent(new core.MouseEvent('click', { bubbles: true }));
     await wait(root, 30);
 
-    assert.deepEqual(received.map((m) => [m.type, m.sourcePageId, JSON.stringify({ ...m.data })]), [['PLANT_CHORE_BATCH', 'CoreUI1', '{}']]);
+    assert.deepEqual(received.map((m: Any) => [m.type, m.sourcePageId, JSON.stringify({ ...m.data })]), [['GREENLINE_TEND', 'CoreUI1', '{}']]);
     assert.equal(core.eval('state.maturePlantsExpanded'), true);
   });
 
-  test('jsdom: the game header button and checkbox are hidden while the mod shows Patrol', async (t) => {
+  test('jsdom: the game header button and checkbox are hidden while the mod shows Patrol', async (t: Any) => {
     const { doc, core, root } = await setup(t);
     await postPatrol(core, true, false);
     setPots(root, fixture());
@@ -1005,12 +1007,12 @@ if (!gameFileExists) {
     }
   });
 
-  function replantLine(doc) { return doc.querySelector('.mature-popover .greenline-replant'); }
+  function replantLine(doc?: Any) { return doc.querySelector('.mature-popover .greenline-replant'); }
 
-  test('jsdom: the Auto-replant line is the last grid line and shows the game value', async (t) => {
+  test('jsdom: the Auto-replant line is the last grid line and shows the option of the pot data', async (t: Any) => {
     const { doc, core, root } = await setup(t);
-    await postPatrol(core, true, true);
-    await wait(core, 30);
+    // The game's own Replant value does not count.
+    await postPatrol(core, true, false);
     root.__greenline.step();
 
     const line = replantLine(doc);
@@ -1022,30 +1024,30 @@ if (!gameFileExists) {
     assert.ok(line.classList.contains('has-entry-tip'));
     assert.ok(line.querySelector('.entry-tip').textContent.includes('plants the same crop again'));
 
-    await postPatrol(core, true, false);
-    await wait(core, 30);
+    setPots(root, Object.assign(fixture(), { replantOn: false }));
+    assert.equal(line.querySelector('input[type=checkbox]').checked, false);
     root.__greenline.step();
     assert.equal(line.querySelector('input[type=checkbox]').checked, false);
   });
 
-  test('jsdom: an Auto-replant click posts the game Replant toggle', async (t) => {
-    const { doc, core, root } = await setup(t);
-    const received = [];
-    root.addEventListener('message', (e) => received.push(e.data));
+  test('jsdom: an Auto-replant click posts GREENLINE_REPLANT with the new value', async (t: Any) => {
+    const { doc, root } = await setup(t, { pots: Object.assign(fixture(), { replantOn: false }) });
+    const received: Any[] = [];
+    root.addEventListener('message', (e: Any) => received.push(e.data));
 
     replantLine(doc).querySelector('input[type=checkbox]').click();
     await wait(root, 30);
 
-    assert.deepEqual(received.map((m) => [m.type, JSON.stringify({ ...m.data })]), [['PLANT_CHORE_REPLANT_TOGGLE', '{"on":true}']]);
+    assert.deepEqual(received.map((m: Any) => [m.type, m.sourcePageId, JSON.stringify({ ...m.data })]), [['GREENLINE_REPLANT', 'CoreUI1', '{"on":true}']]);
   });
 
-  test('jsdom: no Auto-replant line with no Patrol', async (t) => {
+  test('jsdom: no Auto-replant line with no Patrol', async (t: Any) => {
     const { doc } = await setup(t, { pots: Object.assign(fixture(), { patrol: false }) });
 
     assert.equal(replantLine(doc), null);
   });
 
-  test('jsdom: a missing chevron turns off only the Tend All button', async (t) => {
+  test('jsdom: a missing chevron turns off only the Tend All button', async (t: Any) => {
     const { doc, root } = await setup(t);
     doc.querySelector('.mature-toggle-chevron').classList.remove('mature-toggle-chevron');
 
@@ -1056,7 +1058,7 @@ if (!gameFileExists) {
     assert.ok(doc.querySelector('.greenline-grid'), 'the grid still shows');
   });
 
-  test('jsdom: the English defaults hold each word that the pot data does not give', async (t) => {
+  test('jsdom: the English defaults hold each word that the pot data does not give', async (t: Any) => {
     const { root } = await setup(t);
 
     assert.equal(runPageJs(root, 'window.__greenline.word("stateGrowing")'), 'Growing');
@@ -1069,18 +1071,19 @@ if (!gameFileExists) {
   });
 
   // The world hover card: C# sends the pot under the pointer in the game world.
-  function setHover(root, potId, x, y) {
-    const args = [potId].concat(x === undefined ? [] : [x, y]).map((a) => JSON.stringify(a)).join(',');
+  function setHover(root?: Any, potId?: Any, x?: Any, y?: Any, keepCell?: Any) {
+    const args = [potId].concat(x === undefined ? [] : [x, y]).concat(keepCell === undefined ? [] : [keepCell])
+      .map((a: Any) => JSON.stringify(a)).join(',');
     return runPageJs(root, 'window.__greenline.setHover(' + args + ')');
   }
 
-  function hoverNode(doc) {
+  function hoverNode(doc?: Any) {
     const nodes = doc.querySelectorAll('.greenline-hover');
     assert.ok(nodes.length <= 1, 'at most one hover node');
     return nodes[0] || null;
   }
 
-  test('jsdom: setHover shows the card of the pot in one node of the frame body, the same as the grid card, and takes no pointer', async (t) => {
+  test('jsdom: setHover shows the card of the pot in one node of the frame body, the same as the grid card, and takes no pointer', async (t: Any) => {
     const { doc, core, root } = await setup(t);
     setHover(root, 1001);
 
@@ -1092,7 +1095,7 @@ if (!gameFileExists) {
     assert.deepEqual(readCard(node), card(doc, 1001));
   });
 
-  test('jsdom: setHover hides the card for no pot and for an unknown pot', async (t) => {
+  test('jsdom: setHover hides the card for no pot and for an unknown pot', async (t: Any) => {
     const { doc, root } = await setup(t);
 
     setHover(root, 1001);
@@ -1104,113 +1107,171 @@ if (!gameFileExists) {
     assert.ok(hoverNode(doc).hidden, 'unknown pot');
   });
 
-  test('jsdom: setHover of the same pot twice writes nothing to the DOM', async (t) => {
+  test('jsdom: setHover of the same pot twice writes nothing to the DOM', async (t: Any) => {
     const { doc, core, root } = await setup(t);
     setHover(root, 1001);
     await wait(core, 60);
 
-    const records = [];
-    const observer = new core.MutationObserver((list) => records.push(...list));
+    const records: Any[] = [];
+    const observer = new core.MutationObserver((list: Any) => records.push(...list));
     observer.observe(hoverNode(doc), { childList: true, subtree: true, attributes: true, characterData: true });
     setHover(root, 1001);
     await wait(core, 30);
     observer.disconnect();
 
-    assert.equal(records.length, 0, `unexpected writes: ${records.map((r) => r.type + ' ' + r.attributeName).join(', ')}`);
+    assert.equal(records.length, 0, `unexpected writes: ${records.map((r: Any) => r.type + ' ' + r.attributeName).join(', ')}`);
   });
 
-  function movePointer(core, x, y, target) {
-    const el = target || core.document.body;
-    el.dispatchEvent(new core.MouseEvent('mousemove', { bubbles: true, clientX: x, clientY: y }));
+  // The card is pinned next to its anchor (a cell, or the place of a world pot): right of it with the
+  // arrow at the middle of the anchor, on the other side when the card would pass the right edge, and
+  // inside the window at the top and the bottom. jsdom has no layout, so a test gives the card a size.
+  function sized(node?: Any, w?: Any, h?: Any) {
+    Object.defineProperty(node, 'offsetWidth', { value: w, configurable: true });
+    Object.defineProperty(node, 'offsetHeight', { value: h, configurable: true });
   }
 
-  test('jsdom: the world card sits 12px right of and below the pointer, and on the other side at the window edge', async (t) => {
-    const { doc, core, root } = await setup(t);
-    setHover(root, 1001);
+  function placeOf(node?: Any) {
+    return [node.style.left, node.style.top, node.style.getPropertyValue('--gl-arrow-y'), node.classList.contains('greenline-hover-left')];
+  }
 
-    movePointer(core, 100, 200);
+  const CELL = { left: 100, top: 200, right: 126, bottom: 226 };
+
+  test('jsdom: the grid card sits right of its cell with the arrow at the middle of the cell', async (t: Any) => {
+    const { doc } = await setup(t);
+    hoverCell(doc, 1001, CELL);
     const node = hoverNode(doc);
-    assert.deepEqual([node.style.left, node.style.top], ['112px', '212px']);
+    sized(node, 200, 100);
+    hoverCell(doc, 1001, CELL);
 
-    // jsdom has no layout, so the card has no size: the edge is the window edge itself.
-    movePointer(core, core.innerWidth - 10, core.innerHeight - 10);
-    assert.deepEqual([node.style.left, node.style.top], [(core.innerWidth - 22) + 'px', (core.innerHeight - 22) + 'px']);
+    assert.deepEqual(placeOf(node), ['136px', '163px', '50px', false]);
   });
 
-  test('jsdom: the world card hides while the pointer is on the HUD or out of the frame, and shows again over the world', async (t) => {
-    const { doc, core, root } = await setup(t);
-    setHover(root, 1001);
-    movePointer(core, 100, 200);
+  test('jsdom: the grid card sits left of its cell at the right edge of the window', async (t: Any) => {
+    const { doc, core } = await setup(t);
+    const rect = { left: core.innerWidth - 60, top: 200, right: core.innerWidth - 34, bottom: 226 };
+    hoverCell(doc, 1001, rect);
     const node = hoverNode(doc);
+    sized(node, 200, 100);
+    hoverCell(doc, 1001, rect);
 
-    const hud = doc.querySelector('[data-interactive]');
-    assert.ok(hud, 'CoreUI1 has a HUD part with data-interactive');
-    movePointer(core, 110, 210, hud);
-    assert.ok(node.hidden, 'on the HUD');
-    movePointer(core, 120, 220);
-    assert.ok(!node.hidden, 'over the world');
+    assert.deepEqual(placeOf(node), [(core.innerWidth - 60 - 10 - 200) + 'px', '163px', '50px', true]);
+  });
 
-    // A game window is another frame: the pointer leaves CoreUI1 with no element to go to.
+  test('jsdom: the card stays inside the window at the top and the bottom, and the arrow keeps pointing at the cell', async (t: Any) => {
+    const { doc, core } = await setup(t);
+    hoverCell(doc, 1001, CELL);
+    const node = hoverNode(doc);
+    sized(node, 200, 100);
+
+    hoverCell(doc, 1001, { left: 100, top: 0, right: 126, bottom: 26 });
+    assert.deepEqual(placeOf(node), ['136px', '0px', '13px', false]);
+
+    const h = core.innerHeight;
+    hoverCell(doc, 1001, { left: 100, top: h - 26, right: 126, bottom: h });
+    assert.deepEqual(placeOf(node), ['136px', (h - 100) + 'px', '87px', false]);
+  });
+
+  test('jsdom: the place takes the CSS zoom of the frame body', async (t: Any) => {
+    const { doc } = await setup(t);
+    hoverCell(doc, 1001, CELL);
+    const node = hoverNode(doc);
+    sized(node, 200, 100);
+    Object.defineProperty(node, 'currentCSSZoom', { value: 2, configurable: true });
+    hoverCell(doc, 1001, CELL);
+
+    // The cell rect is in window pixels; the node's left and top are in zoomed pixels.
+    assert.deepEqual(placeOf(node), ['73px', '57px', '50px', false]);
+  });
+
+  test('jsdom: the grid card shows when the pointer comes onto a cell, stays still while it moves there, and closes when it leaves', async (t: Any) => {
+    const { doc, core } = await setup(t);
+    const c = hoverCell(doc, 1001, CELL);
+    const node = hoverNode(doc);
+    assert.ok(!node.hidden);
+    const before = placeOf(node);
+
+    const records: Any[] = [];
+    const observer = new core.MutationObserver((list: Any) => records.push(...list));
+    observer.observe(node, { childList: true, subtree: true, attributes: true, characterData: true });
+    c.dispatchEvent(new core.MouseEvent('mousemove', { bubbles: true, clientX: 110, clientY: 210 }));
+    c.dispatchEvent(new core.MouseEvent('mousemove', { bubbles: true, clientX: 120, clientY: 220 }));
+    await wait(core, 30);
+    observer.disconnect();
+    assert.equal(records.length, 0, 'a move on the cell writes nothing');
+    assert.deepEqual(placeOf(node), before);
+
+    c.dispatchEvent(new core.MouseEvent('mouseleave', {}));
+    assert.ok(node.hidden);
+  });
+
+  test('jsdom: the grid card closes when the pointer leaves the frame', async (t: Any) => {
+    const { doc, core } = await setup(t);
+    hoverCell(doc, 1001, CELL);
     doc.body.dispatchEvent(new core.MouseEvent('mouseout', { bubbles: true, relatedTarget: null }));
-    assert.ok(node.hidden, 'out of the frame');
-    movePointer(core, 130, 230);
-    assert.ok(!node.hidden, 'back over the world');
+
+    assert.ok(hoverNode(doc).hidden);
   });
 
-  // The page gets no pointer moves over the game world (the web view passes them to the game), so C#
-  // sends the pointer place with the pot, as fractions of the screen from the top-left corner.
-  test('jsdom: the world card sits 12px right of and below the pointer place that C# sends', async (t) => {
+  // C# sends the place of the pot on the screen, as fractions of the screen from the top-left corner.
+  test('jsdom: setHover places the world card at the place of the pot, moves it with a new place, and hides it with 0', async (t: Any) => {
     const { doc, core, root } = await setup(t);
     setHover(root, 1001, 0.25, 0.5);
-
     const node = hoverNode(doc);
-    assert.deepEqual([node.style.left, node.style.top], [(core.innerWidth / 4 + 12) + 'px', (core.innerHeight / 2 + 12) + 'px']);
-  });
-
-  // A game window or menu is another frame over CoreUI1: the pointer leaves CoreUI1, and the page gets no
-  // move when it comes back over the world. Each place from C# checks again what is under the pointer.
-  test('jsdom: after a game window closes, the next pointer place from C# shows the world card again', async (t) => {
-    const { doc, core, root } = await setup(t);
+    sized(node, 200, 100);
     setHover(root, 1001, 0.25, 0.5);
-    doc.body.dispatchEvent(new core.MouseEvent('mouseout', { bubbles: true, relatedTarget: null }));
-    assert.ok(hoverNode(doc).hidden, 'the window is open');
+    const x = core.innerWidth / 4, y = core.innerHeight / 2;
+    assert.deepEqual(placeOf(node), [Math.round(x + 10) + 'px', Math.round(y - 50) + 'px', '50px', false]);
 
-    setHover(root, 1001, 0.3, 0.5);
-    assert.ok(!hoverNode(doc).hidden, 'the window closed, the pointer is over the world');
+    setHover(root, 1001, 0.5, 0.5);
+    assert.equal(node.style.left, Math.round(core.innerWidth / 2 + 10) + 'px', 'a camera move moves the card with the pot');
+
+    setHover(root, 0);
+    assert.ok(node.hidden);
   });
 
-  test('jsdom: the world card hides when the pointer place from C# is on another frame or on a HUD part', async (t) => {
-    const { doc, core, root } = await setup(t);
-    const window = { tagName: 'IFRAME', contentWindow: {} };
-    root.document.elementFromPoint = () => window;
-    setHover(root, 1001, 0.25, 0.5);
-    assert.ok(!hoverNode(doc) || hoverNode(doc).hidden, 'a game window is at the place');
+  // The pointer leaves the web UI for the game world: C# sends 0, which also closes the card of a cell
+  // that got no mouseleave (the game gives the page no pointer move over the world).
+  test('jsdom: setHover 0 closes the grid card too', async (t: Any) => {
+    const { doc, root } = await setup(t);
+    hoverCell(doc, 1001, CELL);
 
-    root.document.elementFromPoint = () => ({ tagName: 'IFRAME', contentWindow: core });
-    doc.elementFromPoint = () => doc.querySelector('[data-interactive]');
-    setHover(root, 1001, 0.3, 0.5);
-    assert.ok(!hoverNode(doc) || hoverNode(doc).hidden, 'a HUD part is at the place');
+    setHover(root, 0);
 
-    doc.elementFromPoint = () => doc.body;
-    setHover(root, 1001, 0.35, 0.5);
-    assert.ok(!hoverNode(doc).hidden, 'the world is at the place');
+    assert.ok(hoverNode(doc).hidden);
   });
 
-  test('jsdom: setHover returns an error as text and does not throw', async (t) => {
+  // C# sends 0 also when the pointer moves from a pot in the world onto the web UI: with keepCell the card of the
+  // cell that the pointer just entered stays.
+  test('jsdom: setHover 0 with keepCell leaves the grid card open', async (t: Any) => {
+    const { doc, root } = await setup(t);
+    hoverCell(doc, 1001, CELL);
+
+    setHover(root, 0, 0, 0, true);
+
+    assert.ok(!hoverNode(doc).hidden);
+    assert.deepEqual(readCard(hoverNode(doc)), card(doc, 1001));
+  });
+
+  test('jsdom: an error of setHover goes to C# as a message, and setHover does not throw', async (t: Any) => {
     const { core, root } = await setup(t);
+    const sent: Any[] = [];
+    root.vuplex = { postMessage: (m: Any) => sent.push(m) };
     core.eval = () => { throw new Error('broken page'); };
 
     assert.match(setHover(root, 1001, 0.25, 0.5), /^error: .*broken page/);
+    assert.equal(sent.length, 1);
+    assert.match(sent[0], /^slmod\|greenline\|hover error: .*broken page/);
   });
 
   // One card shows at a time, so the frame keeps one pot card node, and the frame step builds only it.
-  test('jsdom: the frame keeps one pot card node for the grid and the world', async (t) => {
+  test('jsdom: the frame keeps one pot card node for the grid and the world', async (t: Any) => {
     const { doc, core, root } = await setup(t);
     await wait(core, 60);
     assert.equal(doc.querySelectorAll('.greenline-pot-card').length, 0, 'no card before a hover');
 
     assert.equal(card(doc, 1001).head.name, 'Watermelon');
     assert.equal(card(doc, 1002).head.name, 'Potato');
+    cell(doc, 1002).dispatchEvent(new core.MouseEvent('mouseleave', {}));
     setHover(root, 1001, 0.25, 0.5);
     await wait(core, 30);
 
@@ -1221,51 +1282,9 @@ if (!gameFileExists) {
     assert.equal(doc.querySelectorAll('.greenline-cell .entry-tip').length, 0, 'no card in a cell');
   });
 
-  test('jsdom: the grid card follows the pointer over the cell and hides when the pointer moves to another HUD part', async (t) => {
-    const { doc, core } = await setup(t);
-    hoverCell(doc, 1001, 100, 200);
-    const node = hoverNode(doc);
-    assert.deepEqual([node.style.left, node.style.top], ['112px', '212px']);
-    hoverCell(doc, 1001, 110, 205);
-    assert.deepEqual([node.style.left, node.style.top], ['122px', '217px']);
-
-    movePointer(core, 120, 210, doc.querySelector('[data-interactive]:not(.greenline-cell)'));
-    assert.ok(node.hidden);
-  });
-
-  // The game passes pointer moves to the page only over the HUD parts, so a fast move from a cell to
-  // the world gives the page no move; the next pointer place from C# hides the card of the cell.
-  test('jsdom: a pointer place from C# over the world hides the card of the cell, or shows the hovered world pot', async (t) => {
-    const { doc, root } = await setup(t);
-    hoverCell(doc, 1001);
-    doc.elementFromPoint = () => doc.body;
-
-    setHover(root, 0, 0.5, 0.5);
-    assert.ok(hoverNode(doc).hidden, 'no pot under the pointer');
-    hoverCell(doc, 1001);
-    setHover(root, 1002, 0.5, 0.5);
-    assert.ok(!hoverNode(doc).hidden);
-    assert.equal(readCard(hoverNode(doc)).head.name, 'Potato');
-
-    doc.elementFromPoint = () => cell(doc, 1001);
-    setHover(root, 0, 0.1, 0.1);
-    assert.equal(readCard(hoverNode(doc)).head.name, 'Watermelon', 'the place is on a cell');
-  });
-
-  test('jsdom: the card stays inside the window at each edge', async (t) => {
-    const { doc, core } = await setup(t);
-    hoverCell(doc, 1001, 100, 100);
-    const node = hoverNode(doc);
-    Object.defineProperty(node, 'offsetWidth', { value: core.innerWidth - 50 });
-    Object.defineProperty(node, 'offsetHeight', { value: core.innerHeight - 50 });
-
-    hoverCell(doc, 1001, 100, 100);
-    assert.deepEqual([node.style.left, node.style.top], ['0px', '0px']);
-  });
-
   // CoreUI1 sends the places of its HUD parts to the game after each change of style or class; the card
-  // moves with the pointer, so it opts out with the game's own marker.
-  test('jsdom: the card node opts out of the game sync of the HUD places', async (t) => {
+  // moves with its cell and its pot, so it opts out with the game's own marker.
+  test('jsdom: the card node opts out of the game sync of the HUD places', async (t: Any) => {
     const { doc } = await setup(t);
     hoverCell(doc, 1001);
     assert.ok(hoverNode(doc).hasAttribute('data-no-sync'));

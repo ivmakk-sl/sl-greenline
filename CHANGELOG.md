@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Greenline's own Tend All: the mod finds the chore of each pot (Remove Pests before Remove Weeds before Water for a growing crop, Harvest, Clean Up, Till; a Harvest with its Till and Plant chore while Auto-replant is on) within the Stamina of the character, from planting level 3, and queues each chore as a click in the menu of the pot does. A pot that already has a chore in the queue gets no second one.
+- The Tend All route: the chores follow the shortest walk, the floor of the character first, then the other floors one by one; on each floor the shortest order through all pots (exact up to 12 pots), with walk lengths from the navigation mesh of the game, around walls. The kind of a chore and the time left of a crop do not change the order. With Stamina for only part of the chores, Tend All queues the first chores of the route.
+- The last-crop line in the planting window, right of the PLANTING title: the last crop of the pot, and in red the reason when Auto-replant stopped (`seeds 0/1`, `not enough light`, `too cold`).
+- Same as last crop in the Sowing Presets of the Farming GR-3, first after None for each pot size: the robot plants the last crop of each pot, and skips a pot with no known last crop, too few seeds, or its own Auto-replant off.
+- A Stamina cut never splits the chores of a pot: a pot whose Harvest chain does not fit waits for a later Tend All, and the later pots whose chores fit still go.
+- Tend All leaves a pot that a robot has claimed (`PlantChoreManager._claims`); the robot already skips a pot that the character has queued, so the two never work on one pot.
+- A `Verbose` line with the seed count when the Plant chore of a replant runs.
+
+### Changed
+
+- The Auto-replant checkbox under the grid is Greenline's own setting in the save, on in a save with no value. A later off stays off. The game's own Replant value is no longer read.
+- The pot card is pinned next to its grid cell, and next to its pot in the game world, each with an arrow. The world card sends once when the pot under the pointer changes, with no callback, and nothing while the pointer moves.
+- The page code is TypeScript built by Vite, with Vitest page tests and a dev harness (`npm run dev`); the mod texts use the shared i18n library.
+
+### Removed
+
+- The game's hidden Patrol and its Tend ×N quick action: Greenline no longer turns them on.
+- The reason box above the Plant button, replaced by the last-crop line.
+- The fit check of a replant: the last crop comes from the same pot, and a pot does not change its size.
+
 ## [1.1.0] - 2026-09-29
 
 ### Added

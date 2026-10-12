@@ -1,0 +1,21 @@
+{
+  "stateGrowing": "WebUI_PlantingDetails_3",
+  "stateMature": "WebUI_PlantingDetails_4",
+  "stateWithered": "WebUI_PlantingDetails_5",
+  "statePoor": "WebUI_PlantingDetails_6",
+  "stateStalled": "WebUI_PlantingDetails_2",
+  "stateEmpty": "SR_Web_CoreUI1_59",
+  "problemPest": "WebUI_PlantingDetails_9",
+  "problemFrost": "WebUI_PlantingDetails_7",
+  "problemLightLow": "WebUI_PlantingDetails_8",
+  "problemLightHigh": "WebUI_PlantPanel_22",
+  "problemNeedFert": "SR_Web_DailyFert_StateFertStalled",
+  "labelFertilizer": "ItemType11",
+  "tendAll": "SR_Web_CoreUI1_117",
+  "reasonLight": "WebUI_PlantPanel_21",
+  "reasonCold": "WebUI_PlantPanel_23",
+  "patrolNoStamina": "HandMadeComponent_0",
+  "patrolNoChore": "PlantChoreBatch_0",
+  "patrolPart": "PlantChoreBatch_1",
+  "patrolQueued": "PlantChoreBatch_2"
+}

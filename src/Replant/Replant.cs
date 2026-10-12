@@ -6,6 +6,7 @@ using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
 using GameCore.HotUpdate.ReduxUI;
 using UnityEngine;
+using SlShared.I18n;
 
 namespace Greenline
 {
@@ -18,8 +19,6 @@ namespace Greenline
         private static readonly HashSet<long> pots = new HashSet<long>();
         private static List<(int Item, int Plant)> seedItems;
         private static float nextCheck;
-
-        internal static void Clear() => pots.Clear();
 
         // The planting that waits for the store: the window's actions act on the store's current window
         // state, and during RA_Open the store still holds the state of the window before (seen in the
@@ -113,7 +112,7 @@ namespace Greenline
         }
 
         // Selects the last crop's seed in a window that the player opened, when the containers have that
-        // seed and the crop fits the pot. The fertilizer selection stays. The player still clicks Plant.
+        // seed. The fertilizer selection stays. The player still clicks Plant.
         internal static void SelectLastCrop(State_Web_PlantPanel state)
         {
             long potId = state.FurnitureInstanceId;
@@ -123,7 +122,6 @@ namespace Greenline
             for (int i = 0; i < state.Seeds.Count; i++) seedIds.Add(state.Seeds[i].ItemConfigId.Value);
             var (index, _) = ReplantLogic.FindSeed(lastSeed, seedIds);
             if (index < 0 || index == state.SelectedSeedIndex.Value) return;
-            if (state.Seeds[index].PlantSize.Value > state.Capacity.Value) return;
             Reducer_Web_PlantPanel.RecalcSelection(state, index, state.SelectedFertIndex.Value);
             if (Plugin.Verbose.Value) Plugin.Log.LogDebug($"Greenline: pot {potId} window selects the last crop, seed {lastSeed} index {index}");
         }
@@ -142,6 +140,10 @@ namespace Greenline
 
             int lastSeed = SaveKeys.Get("crop", potId, 0);
             var (index, found) = ReplantLogic.FindSeed(lastSeed, seedIds);
+            // The window lists the seeds of the containers when the Plant chore runs, so a seed from a
+            // harvest earlier in the same Patrol run counts.
+            if (Plugin.Verbose.Value)
+                Plugin.Log.LogDebug($"Greenline replant: pot {potId} last seed {lastSeed} have {(index >= 0 ? state.Seeds[index].OwnedCount.Value : 0)} at Plant");
             ReplantLogic.Decision decision;
             if (index < 0)
             {
@@ -151,8 +153,7 @@ namespace Greenline
             {
                 var seed = state.Seeds[index];
                 Reducer_Web_PlantPanel.RecalcSelection(state, index, -1);
-                bool fits = seed.PlantSize.Value <= state.Capacity.Value;
-                decision = ReplantLogic.Classify(state.HasEnoughSeed.Value, state.IsLightOk.Value, state.IsTempOk.Value, fits,
+                decision = ReplantLogic.Classify(state.HasEnoughSeed.Value, state.IsLightOk.Value, state.IsTempOk.Value,
                     seed.OwnedCount.Value, state.RequiredSeedCount.Value);
             }
 
@@ -173,8 +174,32 @@ namespace Greenline
             // The window stays open with the last crop's seed selected when the list has it, and shows why
             // the replant stopped.
             if (index >= 0) Reducer_Web_PlantPanel.RecalcSelection(state, index, gameFert);
-            PlantPanelScript.SetState(potId, PotOptions.Replant(potId), PotOptions.Fert(potId),
-                ReplantLogic.ReasonText(decision, ItemName(lastSeed), GreenWords.Dictionary()));
+            ShowLine(potId, decision);
+        }
+
+        // Sends the pot values and the last-crop line to the planting window of the pot. `stopped` is the
+        // decision of a Patrol replant that did not plant, null for a planting window by hand.
+        internal static void ShowLine(long potId, ReplantLogic.Decision? stopped)
+        {
+            var (name, icon) = CropOfSeed(SaveKeys.Get("crop", potId, 0));
+            var line = ReplantLogic.LineText(name, stopped, ModTexts.Current().ToDictionary());
+            if (line != null && Plugin.Verbose.Value)
+                Plugin.Log.LogDebug($"Greenline replant: pot {potId} last-crop line '{line.Label} {line.Crop}' '{line.Red}'");
+            PlantPanelScript.SetState(potId, PotOptions.Replant(potId), PotOptions.Fert(potId), line, icon);
+        }
+
+        // The name and the icon of the crop that a seed item plants (the icon of its first harvest item, as
+        // the pot grid shows the crop), or empty texts for an unknown seed.
+        private static (string Name, string Icon) CropOfSeed(int seedItemId)
+        {
+            var config = ConfigManager.Instance;
+            var item = seedItemId > 0 ? config.Get_Config_Item(seedItemId) : null;
+            var crop = item != null ? config.Get_Config_Plant(item.Plant) : null;
+            if (crop == null) return ("", "");
+            string name = string.IsNullOrEmpty(crop.Name) ? "" : config.GetLocalTxt(crop.Name);
+            if (string.IsNullOrEmpty(name)) name = crop.Name ?? "";
+            string icon = crop.Gain != null && crop.Gain.Count > 0 ? config.Get_Config_Item(crop.Gain[0])?.WebIcon ?? "" : "";
+            return (name, icon);
         }
 
         // A seed that takes no fertilizer at planting (a research crop): the game drops its fertilizer, so
@@ -214,8 +239,7 @@ namespace Greenline
             }
             if (pick == 0)
             {
-                var words = GreenWords.Dictionary();
-                string text = string.Format(words["popNoFert"], state.FacilityName.Value);
+                string text = I18nTexts.Fill(ModTexts.Current()["popNoFert"], ("pot", state.FacilityName.Value));
                 EventDispatcherTools.NotifyGlobal<string>(EnumNotify_Show.PopText, text);
                 return -1;
             }
@@ -232,15 +256,6 @@ namespace Greenline
             var item = seedItemId > 0 ? config.Get_Config_Item(seedItemId) : null;
             var crop = item != null ? config.Get_Config_Plant(item.Plant) : null;
             return crop != null && crop.Size > 0 ? Math.Max(1, capacity / crop.Size) : 0;
-        }
-
-        private static string ItemName(int itemId)
-        {
-            var config = ConfigManager.Instance;
-            var item = itemId > 0 ? config.Get_Config_Item(itemId) : null;
-            if (item == null || string.IsNullOrEmpty(item.ItemName)) return "";
-            string text = config.GetLocalTxt(item.ItemName);
-            return string.IsNullOrEmpty(text) ? item.ItemName : text;
         }
     }
 }
