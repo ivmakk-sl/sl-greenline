@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SlShared.Route;
 
 namespace Greenline
 {
@@ -110,6 +111,20 @@ namespace Greenline
             result.Outcome = result.Sends.Count == 0 ? Outcome.NoStamina
                 : result.Sends.Count < result.Total ? Outcome.Part : Outcome.All;
             return result;
+        }
+
+        // The pots in the order of the Patrol route, from the route library (shared/route): the floor of the character
+        // first, then each next floor by the stairs from the floor before, and the shortest walk on each floor.
+        // `floorCost`, `stairs`, and `walk` are those of RouteOrder.Order. Internal, as the library types are.
+        internal static List<PotChore> InRouteOrder(RouteStart start, IList<PotChore> pots, Func<int, int, int> floorCost,
+            Func<int, (float X, float Z)?> stairs = null,
+            Func<(float X, float Y, float Z), (float X, float Y, float Z), double> walk = null)
+        {
+            var stops = new List<RouteStop>(pots.Count);
+            foreach (var pot in pots) stops.Add(new RouteStop { Floor = pot.Floor, X = pot.X, Y = pot.Y, Z = pot.Z });
+            var route = new List<PotChore>(pots.Count);
+            foreach (int i in RouteOrder.Order(start, stops, floorCost, stairs, walk)) route.Add(pots[i]);
+            return route;
         }
 
         // The count of chores that wait: the chores of the pots with no queued chore, with no budget cut.

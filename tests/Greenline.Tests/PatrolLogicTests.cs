@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Greenline;
+using SlShared.Route;
 using Xunit;
 using static Greenline.PatrolLogic;
 
@@ -111,5 +113,54 @@ public class PatrolLogicTests
 
         Assert.Equal(3 + 2 + 1, Pending(pots, replantOn: true));
         Assert.Equal(1 + 1 + 1, Pending(pots, replantOn: false));
+    }
+
+    // The Patrol route through the route library (shared/route): the pots go in and come back in route order.
+    private static PotChore At(long id, int floor, float x, float z, int action = Harvest) =>
+        new PotChore { PotId = id, Floor = floor, X = x, Z = z, FurnitureActionId = 2, ActionId = action };
+
+    // The floors in a row: 101 (Basement), 1 (Home), 102 (2nd Floor), 103; the cost is the count of stairs.
+    private static readonly int[] Stack = { 101, 1, 102, 103 };
+    private static int Stairs(int from, int to) => Math.Abs(Array.IndexOf(Stack, from) - Array.IndexOf(Stack, to));
+
+    private static RouteStart Home => new RouteStart { Floor = 1 };
+
+    private static string Ids(IEnumerable<PotChore> pots) => string.Join(",", pots.Select(p => p.PotId));
+
+    [Fact]
+    public void The_route_goes_around_a_wall_between_two_near_pots()
+    {
+        var pots = new[] { At(1, 1, 1, 0), At(2, 1, 2, 0), At(3, 1, 10, 0) };
+        double Wall((float X, float Y, float Z) a, (float X, float Y, float Z) b) =>
+            (a.X == 1 && b.X == 2) || (a.X == 2 && b.X == 1) ? 100 : Math.Abs(a.X - b.X) + Math.Abs(a.Z - b.Z);
+
+        Assert.Equal("1,2,3", Ids(InRouteOrder(Home, pots, Stairs)));
+        Assert.Equal("1,3,2", Ids(InRouteOrder(Home, pots, Stairs, walk: Wall)));
+    }
+
+    [Fact]
+    public void The_route_does_the_floor_of_the_character_first()
+    {
+        var pots = new[] { At(1, 102, 0, 0), At(2, 1, 5, 0, Weed), At(3, 1, 2, 0) };
+
+        Assert.Equal("3,2,1", Ids(InRouteOrder(Home, pots, Stairs)));
+    }
+
+    [Fact]
+    public void The_kind_of_the_chore_does_not_change_the_route()
+    {
+        var pots = new[] { At(1, 1, 20, 0, Pest), At(2, 1, 1, 0, Weed) };
+
+        Assert.Equal("2,1", Ids(InRouteOrder(Home, pots, Stairs)));
+    }
+
+    [Fact]
+    public void Plan_on_the_route_keeps_the_chores_of_one_pot_together()
+    {
+        var pots = new[] { At(1, 1, 5, 0), At(2, 1, 1, 0) };
+
+        var plan = Plan(InRouteOrder(Home, pots, Stairs), replantOn: true, budget: 10);
+
+        Assert.Equal("2:1617 2:1618 2:1610 1:1617 1:1618 1:1610", string.Join(" ", plan.Sends.Select(s => s.PotId + ":" + s.ActionId)));
     }
 }

@@ -4,6 +4,7 @@ using System.Text;
 using SlShared.I18n;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
+using SlShared.Route;
 using static Greenline.PatrolLogic;
 
 namespace Greenline
@@ -40,12 +41,12 @@ namespace Greenline
                 var role = world._AgentManager.GetLeadingRole();
                 var place = role.GetAgentComponent<TransformComponent>().Position;
                 int floor = role.GetAgentComponent<UserComponent>()?.MapConfigId ?? 0;
-                var start = new RouteLogic.Start { Floor = floor, X = place.x, Y = place.y, Z = place.z };
+                var start = new RouteStart { Floor = floor, X = place.x, Y = place.y, Z = place.z };
                 // The game gives no place of the stairs of a floor, so a later floor starts from the last pot
                 // of the floor before. The walk lengths come from the navigation mesh, around the walls.
-                var walk = new WalkLength();
+                var walk = new WalkLength(m => Plugin.WarnOnce("Greenline: " + m));
                 var clock = System.Diagnostics.Stopwatch.StartNew();
-                var route = RouteLogic.Order(start, Scan(world, role.InstanceId), FloorCost, floor => null, walk.Of);
+                var route = InRouteOrder(start, Scan(world, role.InstanceId), FloorStairs.Count, walk: walk.Of);
                 long routeMs = clock.ElapsedMilliseconds;
                 if (Plugin.Verbose.Value) Plugin.Log.LogDebug($"{WalkLine(start, route, walk)}; the scan and the route took {routeMs} ms");
 
@@ -115,14 +116,6 @@ namespace Greenline
             return false;
         }
 
-        // The stairs between two floors, as the game's own Patrol counts them (99 with no route).
-        private static int FloorCost(int from, int to)
-        {
-            if (from == to || from <= 0 || to <= 0) return 0;
-            var route = FloorRouteHelper.GetRoute(from, to);
-            return route != null && route.Count > 0 ? route.Count : 99;
-        }
-
         private static void ShowText(PlanResult plan, int sent)
         {
             var texts = ModTexts.Current();
@@ -142,16 +135,16 @@ namespace Greenline
 
         // The walk of the route on the navigation mesh, against the walk of the route that the straight distances
         // give (the route before the mesh), over the same pots; a floor change counts nothing.
-        private static string WalkLine(RouteLogic.Start start, List<PotChore> route, WalkLength walk)
+        private static string WalkLine(RouteStart start, List<PotChore> route, WalkLength walk)
         {
-            var straight = RouteLogic.Order(start, route, FloorCost, floor => null);
+            var straight = InRouteOrder(start, route, FloorStairs.Count);
             double walked = Walked(start, route, walk), straightWalked = Walked(start, straight, walk);
             return string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "Greenline Patrol: walk {0:F1} m, the straight-distance route {1:F1} m; paths {2}, straight fallbacks {3} (walkable areas {4}, all areas {5}, partial {6})",
                 walked, straightWalked, walk.Paths + walk.AllAreaPaths + walk.PartialPaths, walk.Fallbacks, walk.Paths, walk.AllAreaPaths, walk.PartialPaths);
         }
 
-        private static double Walked(RouteLogic.Start start, List<PotChore> route, WalkLength walk)
+        private static double Walked(RouteStart start, List<PotChore> route, WalkLength walk)
         {
             double sum = 0;
             var here = (start.X, start.Y, start.Z);

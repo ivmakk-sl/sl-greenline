@@ -13,7 +13,7 @@
     <Compile Include="..\..\src\Hover\HoverLogic.cs" Link="HoverLogic.cs" />
     <Compile Include="..\..\src\Replant\ReplantLogic.cs" Link="ReplantLogic.cs" />
     <Compile Include="..\..\src\Patrol\PatrolLogic.cs" Link="PatrolLogic.cs" />
-    <Compile Include="..\..\src\Patrol\RouteLogic.cs" Link="RouteLogic.cs" />
+    <Compile Include="..\..\src\Shared\route\cs\*.cs" Link="Shared\route\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Robot\RobotLogic.cs" Link="RobotLogic.cs" />
     <Compile Include="..\..\src\PotOptions\SaveKeyLogic.cs" Link="SaveKeyLogic.cs" />
     <Compile Include="..\..\src\Web\PageJson.cs" Link="PageJson.cs" />

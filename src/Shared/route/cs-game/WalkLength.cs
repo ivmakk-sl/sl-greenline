@@ -1,24 +1,32 @@
+// Library copy of shared/route 1.0.0. Do not edit: see src/Shared/route/VERSION.
 using System;
 using System.Collections.Generic;
 using GameCore.HotUpdate;
 using UnityEngine;
 using UnityEngine.AI;
 
-namespace Greenline
+namespace SlShared.Route
 {
-    // The walk length between two places on one floor for the Patrol route: the length of the path of the
-    // navigation mesh, on the walkable areas of the game (GameKey.WalkableAreaMask, as AE_IsInRange measures a
-    // walk), so a wall between two near pots makes the walk long. Each place is first moved onto the mesh
-    // (a pot stands on no walkable area). When the mesh gives no full path, the length is the straight one.
-    // One instance lives for one click of Tend All and keeps each length it found.
+    // The walk length between two places on one floor for a route: the length of the path of the navigation mesh, on
+    // the walkable areas of the game (GameKey.WalkableAreaMask, as AE_IsInRange measures a walk), so a wall between two
+    // near places makes the walk long. Each place is first moved onto the mesh within the snap radius (a pot or a trap
+    // stands on no walkable area). When the mesh gives no full path, the length is the straight one. One instance lives
+    // for one route and keeps each length it found. A mod needs a reference to UnityEngine.AIModule.
     internal sealed class WalkLength
     {
-        // How far a place can be from the mesh: a pot is an obstacle, so the walkable floor is next to it.
-        private const float SnapRadius = 2f;
-
+        private readonly float snapRadius;
+        private readonly Action<string> warn;
         private readonly int mask = GameKey.WalkableAreaMask;
         private readonly NavMeshPath path = new NavMeshPath();
         private readonly Dictionary<(float, float, float, float, float, float), double> lengths = new Dictionary<(float, float, float, float, float, float), double>();
+
+        // `warn` gets the text of a failed mesh call (the mod writes it to its log once); `snapRadius` is how far a
+        // place can be from the mesh: a pot is an obstacle, so the walkable floor is next to it.
+        internal WalkLength(Action<string> warn, float snapRadius = 2f)
+        {
+            this.warn = warn;
+            this.snapRadius = snapRadius;
+        }
 
         internal int Paths { get; private set; }
         internal int AllAreaPaths { get; private set; }
@@ -42,7 +50,7 @@ namespace Greenline
             double straight = Math.Sqrt((a.x - b.x) * (a.x - b.x) + (a.z - b.z) * (a.z - b.z));
             try
             {
-                if (NavMesh.SamplePosition(a, out var hitA, SnapRadius, mask) && NavMesh.SamplePosition(b, out var hitB, SnapRadius, mask))
+                if (NavMesh.SamplePosition(a, out var hitA, snapRadius, mask) && NavMesh.SamplePosition(b, out var hitB, snapRadius, mask))
                 {
                     if (Complete(hitA.position, hitB.position, mask)) { Paths++; return Length(hitB.position, false); }
                     // The all-areas query below reuses `path`, so the partial walk of the walkable areas is kept first.
@@ -52,7 +60,7 @@ namespace Greenline
                     if (partial >= 0) { PartialPaths++; return partial; }
                 }
             }
-            catch (Exception e) { Plugin.WarnOnce($"Greenline: a walk length failed, the route uses the straight distance: {e.Message}"); }
+            catch (Exception e) { warn?.Invoke($"a walk length failed, the route uses the straight distance: {e.Message}"); }
             Fallbacks++;
             return straight;
         }

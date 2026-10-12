@@ -99,7 +99,7 @@ The build runs Vite when a page source file changes. If the npm packages are mis
 
 `Directory.Build.props` sets `GameDir` to the default Steam installation path. For another location, set the `GameDir` environment variable or pass `-p:GameDir=...` to the build command. The output DLL is `src\bin\Release\Greenline.dll`.
 
-Unit tests cover grid layout, badges, hover rules, page JSON, the Tend All chores and route, the robot presets, replant decisions, fertilizer selection, reason messages, save key migration, and opacity. The tested code has no game dependencies. It lives in the `*Logic.cs` files, `src/Web/PageJson.cs`, and `src/Web/PageStyle.cs`.
+Unit tests cover grid layout, badges, hover rules, page JSON, the Tend All chores and route, the robot presets, replant decisions, fertilizer selection, reason messages, save key migration, and opacity. The tested code has no game dependencies. It lives in the `*Logic.cs` files, `src/Web/PageJson.cs`, and `src/Web/PageStyle.cs`. The route order and the walk length are a copy of a shared library in `src/Shared/route/`, whose own tests are in the modding workspace.
 
 ```
 dotnet test tests/Greenline.Tests
