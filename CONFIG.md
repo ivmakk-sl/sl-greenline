@@ -33,7 +33,7 @@ The opacity settings accept numbers from `0` to `1`. BepInEx applies the nearest
 | Config key | Mod default | Effect |
 |---|---|---|
 | `EnablePatrol` | `true` | Enables Tend All, which requires planting level 3. Set to `false` to remove the Tend All button and its automatic replanting. The pot grid, pot card, last-crop line and seed selection in the planting window, and Same as last crop for the Farming GR-3 still work. |
-| `WorldHoverCard` | `true` | Shows the pot card next to the pot when you point at a pot in the game world. Set to `false` to show the card only when you point at a grid cell. If the world card encounters an error, Greenline disables it until the next game start and logs a warning. The remaining features continue to work. |
+| `WorldHoverCard` | `true` | Shows the pot card above the pot when you point at a pot in the game world. Set to `false` to show the card only when you point at a grid cell. If the world card encounters an error, Greenline disables it until the next game start and logs a warning. The remaining features continue to work. |
 | `PanelOpacity` | `0.9` | Sets the background opacity of the plant list header and pot grid. Use `0` for transparent or `1` for solid. The game value is `0.6`. Icons, text, and borders remain fully visible. |
 | `CardOpacity` | `0.96` | Sets the background opacity of the pot card and other Greenline tooltips. Use `0` for transparent or `1` for solid. The game value is `0.96`. Only the background changes. |
 | `Verbose` | `false` | Logs details about the pot grid, replanting, and page scripts at Debug level. Leave this disabled during normal play. |

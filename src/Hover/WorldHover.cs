@@ -48,8 +48,8 @@ namespace Greenline
                 var world = BaseSingleton<BattleShowWorld>.Instance;
                 if (world == null) return;
                 bool overUi = MouseRaycastService.IsPointerOverUI();
-                var center = Vector3.zero;
-                long hovered = overUi ? 0 : HoveredFurniture(world, out center);
+                var top = Vector3.zero;
+                long hovered = overUi ? 0 : HoveredFurniture(world, out top);
                 // PotAt runs on each check: a pot placed under a still pointer joins the scan later.
                 long pot = PotGrid.PotAt(hovered);
                 if (hovered != lastHovered || pot != hoveredPot)
@@ -62,7 +62,7 @@ namespace Greenline
                 if (hoveredPot != 0)
                 {
                     var camera = Camera.main;
-                    if (camera != null) place = camera.WorldToScreenPoint(center);
+                    if (camera != null) place = camera.WorldToScreenPoint(top);
                 }
                 if (sender.Send(hoveredPot, place.x, place.y, overUi))
                 {
@@ -76,29 +76,30 @@ namespace Greenline
             }
         }
 
-        // The InstanceId of the furniture under the pointer, or 0 over no furniture, with the middle of the
-        // collider of its nearest hit in the world.
-        private static long HoveredFurniture(BattleShowWorld world, out Vector3 center)
+        // The InstanceId of the furniture under the pointer, or 0 over no furniture, with the middle of the top
+        // of the collider of its nearest hit in the world: the world card sits above it.
+        private static long HoveredFurniture(BattleShowWorld world, out Vector3 top)
         {
-            center = Vector3.zero;
+            top = Vector3.zero;
             var map = world._ColliderMapManager;
             if (map == null) return 0;
             int count = MouseRaycastService.GetMouseHits(out var hits);
             if (hits == null) return 0;
             var furniture = new List<(float Distance, long Id)>();
-            var centers = new List<Vector3>();
+            var tops = new List<Vector3>();
             for (int i = 0; i < count && i < hits.Length; i++)
             {
                 var hit = hits[i];
                 var collider = hit.collider;
                 if (collider == null) continue;
                 furniture.Add((hit.distance, map.GetInstanceId(collider.GetInstanceID())));
-                centers.Add(collider.bounds.center);
+                var bounds = collider.bounds;
+                tops.Add(new Vector3(bounds.center.x, bounds.max.y, bounds.center.z));
             }
             long nearest = HoverLogic.Nearest(furniture);
             float best = float.MaxValue;
             for (int i = 0; i < furniture.Count; i++)
-                if (furniture[i].Id == nearest && furniture[i].Distance < best) (best, center) = (furniture[i].Distance, centers[i]);
+                if (furniture[i].Id == nearest && furniture[i].Distance < best) (best, top) = (furniture[i].Distance, tops[i]);
             return nearest;
         }
 

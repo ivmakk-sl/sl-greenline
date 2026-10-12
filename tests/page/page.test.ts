@@ -1212,21 +1212,57 @@ if (!gameFileExists) {
     assert.ok(hoverNode(doc).hidden);
   });
 
-  // C# sends the place of the pot on the screen, as fractions of the screen from the top-left corner.
-  test('jsdom: setHover places the world card at the place of the pot, moves it with a new place, and hides it with 0', async (t: Any) => {
+  function worldPlaceOf(node?: Any) {
+    return [node.style.left, node.style.top, node.style.getPropertyValue('--gl-arrow-x'), node.classList.contains('greenline-hover-below')];
+  }
+
+  // C# sends the place of the top of the pot on the screen, as fractions of the screen from the top-left corner.
+  // The world card sits above it, as the game's card of a trap, with the arrow down at the pot.
+  test('jsdom: setHover places the world card above the pot, moves it with a new place, and hides it with 0', async (t: Any) => {
     const { doc, core, root } = await setup(t);
     setHover(root, 1001, 0.25, 0.5);
     const node = hoverNode(doc);
     sized(node, 200, 100);
     setHover(root, 1001, 0.25, 0.5);
     const x = core.innerWidth / 4, y = core.innerHeight / 2;
-    assert.deepEqual(placeOf(node), [Math.round(x + 10) + 'px', Math.round(y - 50) + 'px', '50px', false]);
+    assert.deepEqual(worldPlaceOf(node), [Math.round(x - 100) + 'px', Math.round(y - 10 - 100) + 'px', '100px', false]);
+    assert.ok(!node.classList.contains('greenline-hover-left'));
 
     setHover(root, 1001, 0.5, 0.5);
-    assert.equal(node.style.left, Math.round(core.innerWidth / 2 + 10) + 'px', 'a camera move moves the card with the pot');
+    assert.equal(node.style.left, Math.round(core.innerWidth / 2 - 100) + 'px', 'a camera move moves the card with the pot');
 
     setHover(root, 0);
     assert.ok(node.hidden);
+  });
+
+  test('jsdom: the world card goes under the pot when there is no room above, and stays inside the window at the sides', async (t: Any) => {
+    const { doc, core, root } = await setup(t);
+    setHover(root, 1001, 0.5, 0.05);
+    const node = hoverNode(doc);
+    sized(node, 200, 100);
+
+    const y = core.innerHeight * 0.05;
+    setHover(root, 1001, 0.5, 0.05);
+    assert.deepEqual(worldPlaceOf(node), [Math.round(core.innerWidth / 2 - 100) + 'px', Math.round(y + 10) + 'px', '100px', true]);
+
+    // The arrow keeps pointing at the pot when the card stops at the edge.
+    setHover(root, 1001, 0, 0.5);
+    assert.deepEqual(worldPlaceOf(node), ['0px', Math.round(core.innerHeight / 2 - 110) + 'px', '0px', false]);
+    setHover(root, 1001, 1, 0.5);
+    assert.deepEqual(worldPlaceOf(node), [(core.innerWidth - 200) + 'px', Math.round(core.innerHeight / 2 - 110) + 'px', '200px', false]);
+  });
+
+  test('jsdom: the grid card after a world card is beside its cell again', async (t: Any) => {
+    const { doc, root } = await setup(t);
+    setHover(root, 1001, 0.5, 0.05);
+    const node = hoverNode(doc);
+    sized(node, 200, 100);
+    setHover(root, 1001, 0.5, 0.05);
+    assert.ok(node.classList.contains('greenline-hover-below'));
+
+    hoverCell(doc, 1001, CELL);
+    assert.deepEqual(placeOf(node), ['136px', '163px', '50px', false]);
+    assert.ok(!node.classList.contains('greenline-hover-below') && !node.classList.contains('greenline-hover-above'));
   });
 
   // The pointer leaves the web UI for the game world: C# sends 0, which also closes the card of a cell

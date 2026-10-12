@@ -1,4 +1,4 @@
-// The pot card, pinned next to its anchor: a grid cell under the pointer, or the place of the pot under the
+// The pot card, pinned next to its anchor: beside a grid cell under the pointer, or above the pot under the
 // pointer in the game world.
 import { cardModel, setCard } from './card';
 import { findFrame, frameState, rowsById, setStyle, store, toggleClass } from './core';
@@ -11,8 +11,8 @@ interface Anchor {
   bottom: number;
 }
 
-// The pot of the world card, as the key of the pots of the pot data, or '', and its place on the screen as
-// fractions from the top-left corner.
+// The pot of the world card, as the key of the pots of the pot data, or '', and the place of its top on the
+// screen as fractions from the top-left corner.
 let worldPot = '';
 const worldPlace = { x: 0, y: 0 };
 
@@ -39,6 +39,27 @@ export function placeCard(w: Window, node: HTMLElement, anchor: Anchor): void {
   setStyle(node, 'top', top + 'px');
   setStyle(node, '--gl-arrow-y', Math.round(mid - top) + 'px');
   toggleClass(node, 'greenline-hover-left', leftSide);
+  toggleClass(node, 'greenline-hover-above', false);
+  toggleClass(node, 'greenline-hover-below', false);
+}
+
+// Places the card above a point of the game world, as the game's card of a trap: its middle over the point
+// and the arrow down at it, under the point when it would pass the top of the window, and inside the window
+// at the sides (the arrow then moves along the card to stay at the point).
+export function placeCardAbove(w: Window, node: HTMLElement, x: number, y: number): void {
+  const zoom = (node as HTMLElement & { currentCSSZoom?: number }).currentCSSZoom || 1;
+  const width = node.offsetWidth, height = node.offsetHeight;
+  const px = x / zoom, py = y / zoom;
+  const left = Math.round(Math.min(Math.max(0, px - width / 2), Math.max(0, w.innerWidth / zoom - width)));
+  let top = py - GAP - height;
+  const below = top < 0;
+  if (below) top = py + GAP;
+  setStyle(node, 'left', left + 'px');
+  setStyle(node, 'top', Math.round(top) + 'px');
+  setStyle(node, '--gl-arrow-x', Math.round(Math.min(Math.max(0, px - left), width)) + 'px');
+  toggleClass(node, 'greenline-hover-left', false);
+  toggleClass(node, 'greenline-hover-above', !below);
+  toggleClass(node, 'greenline-hover-below', below);
 }
 
 function onEnter(e: Event): void {
@@ -99,14 +120,12 @@ export function updateHover(doc: Document, state: CoreState | undefined): void {
   const rows = rowsById(state);
   setCard(doc, node, cardModel(pot, pot.rowId ? rows[String(pot.rowId)] : null, state));
   const w = doc.defaultView!;
-  const anchor: Anchor = cellPot && cellEl
-    ? cellEl.getBoundingClientRect()
-    : { left: worldPlace.x * w.innerWidth, right: worldPlace.x * w.innerWidth, top: worldPlace.y * w.innerHeight, bottom: worldPlace.y * w.innerHeight };
-  placeCard(w, node, anchor);
+  if (cellPot && cellEl) placeCard(w, node, cellEl.getBoundingClientRect());
+  else placeCardAbove(w, node, worldPlace.x * w.innerWidth, worldPlace.y * w.innerHeight);
 }
 
 // C# calls this when the pot under the pointer in the game world changes (its PotId, or 0 for none), and
-// when its place on the screen changes while its card shows, with the place as fractions of the screen
+// when its place on the screen changes while its card shows, with the place of its top as fractions of the screen
 // from the top-left corner. 0 also closes the card of a cell: C# sends it when the pointer leaves the web UI,
 // and the game gives the page no pointer move over the world. `keepCell` is true when the pointer went from a
 // world pot onto the web UI: then 0 closes only the world card, and a cell that the pointer entered keeps its

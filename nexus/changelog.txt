@@ -4,7 +4,7 @@ Added: The planting window shows the pot's last crop next to its title, and in r
 Added: Same as last crop in the Sowing Presets of the Farming GR-3: the robot replants each pot with its last crop.
 Added: Tend All leaves a pot that a Farming GR-3 is on its way to, so your character and the robot never work on the same pot.
 Changed: Auto-replant under the pot grid is on by default in each save. If you turn it off, it stays off.
-Changed: The pot card shows next to its grid cell or its pot, with an arrow, and follows the pot when the camera moves.
+Changed: The pot card shows next to its grid cell or above its pot, with an arrow, and follows the pot when the camera moves.
 Changed: Tend All no longer depends on the game's hidden feature.
 Removed: The game's Tend ×N quick action in the bottom bar.
 Removed: The red reason box above the Plant button, which could push the button out of the window.

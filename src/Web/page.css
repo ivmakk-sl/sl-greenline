@@ -533,11 +533,10 @@
 
 /* The arrow of the pinned card, as the tooltips of Stats UI: a turned square in the color and the line of
    the game's tooltip, at the side of the anchor, with its middle at --gl-arrow-y (set by the page script).
-   Under the card (z-index -1 in the stacking context of the card node), so only its point shows. */
+   Over the card, so it hides the card's line where it joins the card and only its two outer sides have a line. */
 .greenline-hover::before {
   content: '';
   position: absolute;
-  z-index: -1;
   left: -5px;
   top: calc(var(--gl-arrow-y, 50%) - 5px);
   width: 9px;
@@ -554,6 +553,27 @@
   border: 0;
   border-top: 1px solid rgb(from var(--gl-white) r g b / 22%);
   border-right: 1px solid rgb(from var(--gl-white) r g b / 22%);
+}
+
+/* The world card above or under its pot: the arrow at the bottom or the top, with its middle at --gl-arrow-x. */
+.greenline-hover.greenline-hover-above::before,
+.greenline-hover.greenline-hover-below::before {
+  left: calc(var(--gl-arrow-x, 50%) - 5px);
+  right: auto;
+  border: 0;
+}
+
+.greenline-hover.greenline-hover-above::before {
+  top: auto;
+  bottom: -5px;
+  border-right: 1px solid rgb(from var(--gl-white) r g b / 22%);
+  border-bottom: 1px solid rgb(from var(--gl-white) r g b / 22%);
+}
+
+.greenline-hover.greenline-hover-below::before {
+  top: -5px;
+  border-left: 1px solid rgb(from var(--gl-white) r g b / 22%);
+  border-top: 1px solid rgb(from var(--gl-white) r g b / 22%);
 }
 
 .greenline-hover > .greenline-tip {

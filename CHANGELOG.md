@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - The Auto-replant checkbox under the grid is Greenline's own setting in the save, on in a save with no value. A later off stays off. The game's own Replant value is no longer read.
-- The pot card is pinned next to its grid cell, and next to its pot in the game world, each with an arrow. The world card sends once when the pot under the pointer changes, with no callback, and nothing while the pointer moves.
+- The pot card is pinned next to its grid cell, and above its pot in the game world as the card of a trap, each with an arrow. The world card sends once when the pot under the pointer changes, with no callback, and nothing while the pointer moves.
 - The page code is TypeScript built by Vite, with Vitest page tests and a dev harness (`npm run dev`); the mod texts use the shared i18n library.
 
 ### Removed

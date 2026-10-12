@@ -17,7 +17,7 @@ The expanded plant list groups pots by floor. Each floor starts with its name an
 - Each cell shows a countdown below its icon. This shows the time until death from Pest or Frost, the end of the harvest window, or crop maturity.
 - If growth stops, a red pause mark replaces the countdown. It uses the same two bars as the game's pause icon. The game restores the paused growth time when you resolve the problem.
 - Point at a cell to see its pot card next to the cell, with an arrow that points at the cell. The card shows the pot and crop sizes, crop state, all problems, full times, fertilizer, and the pot's Auto-fertilize setting. For a crop planted with less fertilizer than the pot size, the card shows the dose after the fertilizer name, for example `1/2`.
-- Point at a pot in the game world to see the same card next to the pot, with an arrow. The card moves with the pot when the camera moves.
+- Point at a pot in the game world to see the same card above the pot, as the card of a trap shows, with an arrow. The card moves with the pot when the camera moves.
 - Click a cell to move the camera to the pot and open its menu. This also works for empty pots.
 
 ## Tend All
