@@ -44,4 +44,41 @@ public class RobotLogicTests
         Assert.True(RobotLogic.PlaceholderIsFree(new HashSet<int> { Corn, Watermelon }));
         Assert.False(RobotLogic.PlaceholderIsFree(new HashSet<int> { Corn, RobotLogic.Placeholder }));
     }
+
+    // The game's ranks and DecayRemain values of PlantChoreManager.TryResolveChore.
+    private const int RankSow = 4, RankStall = 3, RankPest = 0;
+    private const float NoDecay = float.MaxValue;
+
+    [Theory]
+    [InlineData(PatrolLogic.Till)]
+    [InlineData(RobotLogic.RobotPlant)]
+    public void A_Till_or_a_robot_Plant_goes_before_each_Harvest(int actionId)
+    {
+        var (rank, decay) = RobotLogic.FinishRank(actionId, RankSow, NoDecay);
+
+        Assert.Equal(RobotLogic.RankHarvest, rank);
+        Assert.Equal(RobotLogic.FinishDecay, decay);
+    }
+
+    [Fact]
+    public void The_finish_decay_sorts_before_a_crop_at_its_last_second()
+    {
+        Assert.True(RobotLogic.FinishDecay < 0f);
+    }
+
+    [Theory]
+    [InlineData(PatrolLogic.Harvest, 1, 120f)]
+    [InlineData(PatrolLogic.Harvest, 1, 0f)]
+    [InlineData(PatrolLogic.Pest, RankPest, NoDecay)]
+    [InlineData(PatrolLogic.Weed, RankStall, NoDecay)]
+    [InlineData(PatrolLogic.Water, RankStall, NoDecay)]
+    [InlineData(PatrolLogic.Plant, RankSow, NoDecay)]
+    [InlineData(4242, RankSow, NoDecay)]
+    public void Each_other_chore_keeps_its_game_rank(int actionId, int gameRank, float gameDecay)
+    {
+        var (rank, decay) = RobotLogic.FinishRank(actionId, gameRank, gameDecay);
+
+        Assert.Equal(gameRank, rank);
+        Assert.Equal(gameDecay, decay);
+    }
 }

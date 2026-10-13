@@ -3,8 +3,8 @@ import { PAGES, store, word } from './core';
 import { applyLastCrop } from './lastCrop';
 import type { PageName } from './types';
 
-// For each option: its key in the state and the message, its word, and the English fallback.
-const OPTIONS: [ 'replant' | 'fert', string, string][] = [['replant', 'autoReplant', 'Auto-replant'], ['fert', 'autoFert', 'Auto-fertilize']];
+// For each option: its key in the state and the message, and the name of its word.
+const OPTIONS: [ 'replant' | 'fert', string][] = [['replant', 'autoReplant'], ['fert', 'autoFert']];
 
 function onToggle(e: Event): void {
   const box = e.target as HTMLInputElement;
@@ -49,7 +49,7 @@ export function apply(name: PageName, doc: Document): void {
   PAGES[name].place(doc, group);
   for (let i = 0; i < OPTIONS.length; i++) {
     const row = group.querySelector('[data-key="' + OPTIONS[i][0] + '"]')!;
-    const text = word(OPTIONS[i][1], OPTIONS[i][2]);
+    const text = word(OPTIONS[i][1]);
     const label = row.querySelector('span')!;
     if (label.textContent !== text) label.textContent = text;
     const on = !!current[OPTIONS[i][0]];

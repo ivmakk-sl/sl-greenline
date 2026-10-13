@@ -4,29 +4,18 @@ using Xunit;
 // Checks the i18n files of the mod (src/i18n/), embedded in the test assembly as in the mod DLL.
 public class I18nFilesTests
 {
-    private static Dictionary<string, string> Files() => I18nTexts.ReadFiles(typeof(I18nFilesTests).Assembly, "Greenline");
+    private static readonly System.Reflection.Assembly Assembly = typeof(I18nFilesTests).Assembly;
 
     [Fact]
     public void TheI18nFilesHaveNoProblem()
     {
-        Assert.Contains("en.json", Files().Keys);
-        Assert.Empty(I18nCheck.Problems(Files(), null));
+        Assert.Empty(I18nCheck.ModProblems(Assembly, "Greenline", null));
     }
 
     [GameContextFact]
     public void EachTextKeyIsAConstantTextOfTheGame()
     {
-        Assert.Empty(I18nCheck.Problems(Files(), ConstantTextTsv.Keys()));
-    }
-
-    [Fact]
-    public void ChineseHasEachModTextOfEnglish()
-    {
-        var english = I18nTexts.Load(typeof(I18nFilesTests).Assembly, "Greenline").For(1, null).ToDictionary();
-        var files = Files();
-        Assert.Contains("zh.json", files.Keys);
-        foreach (string name in english.Keys)
-            Assert.Contains("\"" + name + "\"", files["zh.json"]);
+        Assert.Empty(I18nCheck.ModProblems(Assembly, "Greenline", ConstantTextTsv.Keys()));
     }
 }
 

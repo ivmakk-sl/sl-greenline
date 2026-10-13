@@ -17,11 +17,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A Stamina cut never splits the chores of a pot: a pot whose Harvest chain does not fit waits for a later Tend All, and the later pots whose chores fit still go.
 - Tend All leaves a pot that a robot has claimed (`PlantChoreManager._claims`); the robot already skips a pot that the character has queued, so the two never work on one pot.
 - A `Verbose` line with the seed count when the Plant chore of a replant runs.
+- The chore order of a robot: each Till and Plant chore of a robot comes after Remove Pests and before each Harvest, so the robot finishes a harvested pot before its next harvest, also after a charge. Without it, the game sorts each Till and Plant after every other chore of the home, and a robot with fewer than 3 trips left harvests a pot with no Till and Plant. A native detour of `PlantChoreManager.TryResolveChore` changes only the rank of a Till or Plant candidate, with offsets from the il2cpp metadata; the game's seed, environment, and claim checks stay. When the target is missing, only this order turns off, with one warning.
+- The config entry `EnableRobotReplant` (on by default) for both robot features, Same as last crop and the chore order: off, Greenline attaches no robot patch, and the robot works as without the mod.
 
 ### Changed
 
 - The Auto-replant checkbox under the grid is Greenline's own setting in the save, on in a save with no value. A later off stays off. The game's own Replant value is no longer read.
-- The pot card is pinned next to its grid cell, and above its pot in the game world as the card of a trap, each with an arrow. The world card sends once when the pot under the pointer changes, with no callback, and nothing while the pointer moves.
+- The pot card is pinned next to its grid cell, and above its pot in the game world as the card of a trap, each with an arrow.
+- Better performance of the world card: it sends once when the pot under the pointer changes, with no callback, and nothing while the pointer moves.
+- The countdown of a cell shows days with one decimal for 1 day or more (`1.4d`, in Chinese `1.4天`), rounded down, and whole days from 10 days, so it stays inside the cell in both languages: the Chinese `1天17时` ran over the next cell. The pot card keeps the exact time.
 - The page code is TypeScript built by Vite, with Vitest page tests and a dev harness (`npm run dev`); the mod texts use the shared i18n library.
 
 ### Removed
@@ -29,6 +33,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The game's hidden Patrol and its Tend ×N quick action: Greenline no longer turns them on.
 - The reason box above the Plant button, replaced by the last-crop line.
 - The fit check of a replant: the last crop comes from the same pot, and a pot does not change its size.
+- Support for game versions before 1.1.18599: Greenline 1.2.0 needs Survival Log 1.1.18599 or later. On an older game, the pot grid follows a language switch only at its next check, once a second, with one warning.
+
+### Fixed
+
+- The pot grid follows a language switch at once again on game 1.1.18599, which renamed the language switch (`ConfigManager.ApplyLanguageKey`).
+- A community language pack of the game gives the mod texts of its language file: `zh.json` for a Chinese pack (for example `zh-TW`), else English, with no warning (i18n library 2.0.0). The page scripts have no English words of their own.
 
 ## [1.1.0] - 2026-09-29
 

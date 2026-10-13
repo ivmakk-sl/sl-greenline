@@ -1,40 +1,12 @@
 // The pot data, the words, and the helpers that the features share.
 import type { CoreState, CoreWindow, PlantRow, Pot, PotsData } from './types';
+import { word as modWord } from '../../Shared/i18n/web/words';
 
 // The game selectors that each feature needs. A missing one is reported as a missing part, so a game
 // update shows in the log and in the page tests.
 export const FEATURES = {
   grid: ['.mature-popover', '.mature-item-row'],
   tend: ['.mature-panel', '.mature-toggle-row', '.mature-toggle-chevron']
-};
-
-// The English words, used when the pot data gives no word for a key.
-const DEFAULT_WORDS: Record<string, string> = {
-  stateGrowing: 'Growing',
-  stateMature: 'Mature',
-  stateWithered: 'Withered',
-  statePoor: 'Poor',
-  stateStalled: 'Stalled',
-  stateEmpty: 'Empty',
-  problemPest: 'Pest',
-  problemFrost: 'Frost',
-  problemLightLow: 'Low Light',
-  problemLightHigh: 'Light Too Strong',
-  problemWeed: 'Weed',
-  problemDrought: 'Drought',
-  problemNeedFert: 'Needs Fertilizer',
-  labelState: 'State',
-  labelGrowth: 'Growth',
-  labelHarvest: 'Harvest',
-  labelFertilizer: 'Fertilizer',
-  valueNone: 'None',
-  autoOn: '(auto: on)',
-  autoOff: '(auto: off)',
-  valueOn: 'On',
-  valueOff: 'Off',
-  tendAll: 'Tend All',
-  autoReplant: 'Auto-replant',
-  autoReplantTip: 'After a harvest, Tend All plants the same crop again, with no planting window.'
 };
 
 // The item icon of Basic Fertilizer: the game has no icon for Needs Fertilizer, so the badge and the
@@ -47,10 +19,10 @@ export const TILL_ICON = '../../Res/icon/icon_line_tool_18.png';
 // The pot data, set by setPots(); null until C# pushes pot data, and then the grid stays off.
 export const store: { data: PotsData | null } = { data: null };
 
+// The mod text of a name in the pot data, or the name. Each part that shows a mod text draws only after the
+// first pot data, so the page has no word of its own.
 export function word(key: string): string {
-  const words = store.data && store.data.words;
-  if (words && typeof words[key] === 'string' && words[key]) return words[key];
-  return DEFAULT_WORDS[key] || '';
+  return modWord(store.data?.words, key);
 }
 
 export function partsMissing(doc: Document, feature: keyof typeof FEATURES): string[] {
@@ -87,7 +59,12 @@ export function shortTime(seconds: number, lang: string): string {
   const total = Math.max(0, Math.floor(seconds));
   const days = Math.floor(total / 86400), hours = Math.floor(total % 86400 / 3600), mins = Math.floor(total % 3600 / 60);
   const zh = lang === 'zh';
-  if (days > 0) return zh ? days + '天' + hours + '时' : days + 'd' + hours + 'h';
+  // From 1 day: days with one decimal, rounded down, so a cell never shows a crop as nearer than it is; whole days
+  // from 10 days. The text stays inside the cell in both languages.
+  if (days > 0) {
+    const tenths = Math.floor(total * 10 / 86400);
+    return (days >= 10 ? String(days) : Math.floor(tenths / 10) + '.' + tenths % 10) + (zh ? '天' : 'd');
+  }
   if (hours > 0) return hours + ':' + pad2(mins);
   return zh ? mins + '分' : mins + 'm';
 }

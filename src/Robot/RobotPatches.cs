@@ -2,7 +2,6 @@ using System;
 using System.Runtime.InteropServices;
 using BepInEx.Unity.IL2CPP.Hook;
 using HarmonyLib;
-using Il2CppInterop.Common;
 using Il2CppInterop.Runtime;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
@@ -205,8 +204,6 @@ namespace Greenline
 
         // The fields of the seed of each pot size in RobotContext, small to large.
         private static readonly string[] SeedFields = { "SowSeedSmall", "SowSeedMedium", "SowSeedLarge" };
-        // il2cpp_type_get_type of an int field (IL2CPP_TYPE_I4).
-        private const int Il2CppTypeI4 = 0x08;
 
         // The places of the seed fields in the unboxed RobotContext, read from the il2cpp metadata at Apply, so a
         // game update that moves a field moves the place too (game 1.1.18385: 0x40, 0x44, 0x48).
@@ -219,14 +216,7 @@ namespace Greenline
 
         internal static void Apply()
         {
-            var method = AccessTools.Method(typeof(PlantChoreManager), "ResolveSowPlan")
-                ?? throw new MissingMethodException("PlantChoreManager", "ResolveSowPlan");
-            var field = Il2CppInteropUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(method)
-                ?? throw new MissingMethodException("PlantChoreManager", "ResolveSowPlan (no method info)");
-            var methodInfo = (IntPtr)field.GetValue(null);
-            // The first field of an il2cpp MethodInfo is the address of the native code.
-            var code = Marshal.ReadIntPtr(methodInfo);
-            if (code == IntPtr.Zero) throw new MissingMethodException("PlantChoreManager", "ResolveSowPlan (no code)");
+            var code = NativeMeta.Code(typeof(PlantChoreManager), "ResolveSowPlan");
             SeedOffsets = ReadSeedOffsets();
             if (Plugin.Verbose.Value)
                 Plugin.Log.LogDebug($"Greenline robot: RobotContext seed fields at 0x{SeedOffsets[0]:X}, 0x{SeedOffsets[1]:X}, 0x{SeedOffsets[2]:X}");
@@ -234,24 +224,13 @@ namespace Greenline
             detour = INativeDetour.CreateAndApply(code, hook, out original);
         }
 
-        // A field that is missing or no longer an int throws, so the patch group of the robot stays off. The
-        // offset of a value type field counts the object header, which the unboxed struct of the hook does not have.
+        // A field that is missing or no longer an int throws, so the patch group of the robot stays off.
         private static int[] ReadSeedOffsets()
         {
-            var klass = Il2CppClassPointerStore<RobotContext>.NativeClassPtr;
-            if (klass == IntPtr.Zero) throw new MissingFieldException("RobotContext", "(no class)");
-            if (!IL2CPP.il2cpp_class_is_valuetype(klass)) throw new MissingFieldException("RobotContext", "(not a struct)");
-            int header = 2 * IntPtr.Size;
+            var klass = NativeMeta.Struct(Il2CppClassPointerStore<RobotContext>.NativeClassPtr, "RobotContext");
             var offsets = new int[SeedFields.Length];
             for (int i = 0; i < SeedFields.Length; i++)
-            {
-                var field = IL2CPP.il2cpp_class_get_field_from_name(klass, SeedFields[i]);
-                if (field == IntPtr.Zero) throw new MissingFieldException("RobotContext", SeedFields[i]);
-                if (IL2CPP.il2cpp_type_get_type(IL2CPP.il2cpp_field_get_type(field)) != Il2CppTypeI4)
-                    throw new MissingFieldException("RobotContext", SeedFields[i] + " (not an int)");
-                offsets[i] = (int)IL2CPP.il2cpp_field_get_offset(field) - header;
-                if (offsets[i] < 0) throw new MissingFieldException("RobotContext", SeedFields[i] + " (bad offset)");
-            }
+                offsets[i] = NativeMeta.FieldOffset(klass, "RobotContext", SeedFields[i], NativeMeta.TypeI4, out _);
             return offsets;
         }
 

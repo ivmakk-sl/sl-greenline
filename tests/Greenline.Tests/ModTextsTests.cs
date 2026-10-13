@@ -55,15 +55,15 @@ public class ModTextsTests
     [MemberData(nameof(Words))]
     public void Each_mod_text_has_its_English_and_Chinese_text(string name, string key, string english, string chinese)
     {
-        Assert.Equal(english, Texts().For(English, null)[name]);
-        Assert.Equal(chinese, Texts().For(Chinese, null)[name]);
+        Assert.Equal(english, Texts().For(English, null, null)[name]);
+        Assert.Equal(chinese, Texts().For(Chinese, null, null)[name]);
     }
 
     [Theory]
     [MemberData(nameof(Words))]
     public void A_mod_text_with_a_text_key_shows_the_game_text(string name, string key, string english, string chinese)
     {
-        var set = Texts().For(English, k => "game:" + k);
+        var set = Texts().For(English, null, k => "game:" + k);
 
         Assert.Equal(key == null ? english : "game:" + key, set[name]);
     }
@@ -71,6 +71,6 @@ public class ModTextsTests
     [Fact]
     public void The_files_have_no_other_mod_text()
     {
-        Assert.Equal(Words.Count, Texts().For(English, null).ToDictionary().Count);
+        Assert.Equal(Words.Count, Texts().For(English, null, null).ToDictionary().Count);
     }
 }

@@ -38,10 +38,11 @@ namespace Greenline
         }
     }
 
-    // A language switch changes the floor labels and the names. SwitchLanguage returns a UniTask, so
-    // the push waits for the next frame (FramePatch), which gives the switch a frame to complete.
-    [HarmonyPatch(typeof(ConfigManager), "SwitchLanguage")]
-    internal static class GridOnSwitchLanguage
+    // A language switch changes the floor labels and the names. ApplyLanguageKey (SwitchLanguage before game
+    // 1.1.18599) returns a UniTask, so the push waits for the next frame (FramePatch), which gives the switch a
+    // frame to complete.
+    [HarmonyPatch(typeof(ConfigManager), "ApplyLanguageKey")]
+    internal static class GridOnApplyLanguageKey
     {
         private static void Postfix()
         {

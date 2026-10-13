@@ -24,6 +24,7 @@ const SRC_DIR = path.join(HERE, '..', '..', 'src', 'Web');
 const PAGE_SOURCE_PATH = path.join(SRC_DIR, 'page', 'core.ts');
 const PAGE_BUNDLE_PATH = path.join(HERE, '..', '..', 'obj', 'page', 'page.js');
 const FIXTURE_PATH = path.join(HERE, '..', 'fixtures', 'pots.json');
+const EN_WORDS_PATH = path.join(SRC_DIR, '..', 'i18n', 'en.json');
 
 const gameFileExists = fs.existsSync(CORE_UI1_HTML);
 
@@ -36,7 +37,13 @@ if (!gameFileExists) {
   const pageCss = ['tokens.css', 'page.css'].map((f: Any) => fs.readFileSync(path.join(SRC_DIR, f), 'utf8')).join('\n');
   const coreUi1Html = fs.readFileSync(CORE_UI1_HTML, 'utf8');
 
-  function fixture() { return JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf8')); }
+  // The pot data with each English mod text, as C# sends it: the page has no word of its own. The fixture file is
+  // the JSON contract of GridLogic.ToJson, which holds only two words.
+  function fixture() {
+    const data = JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf8'));
+    data.words = JSON.parse(fs.readFileSync(EN_WORDS_PATH, 'utf8'));
+    return data;
+  }
 
   // Pulls the page part names out of the FEATURES table of page.js, so this test never copies the names.
   function featureNames() {
@@ -397,7 +404,7 @@ if (!gameFileExists) {
 
   test('jsdom: a growing crop that only stops its growth shows the pause mark in place of the countdown', async (t: Any) => {
     const data = fixture();
-    data.words = { stateStalled: 'Stagnant' };
+    data.words = { ...data.words, stateStalled: 'Stagnant' };
     data.pots['1002'].state = 'growing';
     data.pots['1002'].problems = ['drought', 'lightLow'];
     data.pots['1002'].badge = 'drought';
@@ -477,16 +484,23 @@ if (!gameFileExists) {
     assert.deepEqual(cellPlaces(doc), before);
   });
 
-  test('shortTime: days and hours, hours and minutes, or minutes, in English and Chinese', async (t: Any) => {
+  // Days with one decimal, rounded down, so a cell never shows a crop as nearer than it is; whole days from 10 days.
+  test('shortTime: days with one decimal, hours and minutes, or minutes, in English and Chinese', async (t: Any) => {
     const { root } = await setup(t);
     const short = (s: Any, lang: Any) => runPageJs(root, `window.__greenline.shortTime(${s}, '${lang}')`);
 
-    assert.equal(short(86400 + 5 * 3600 + 6 * 60, 'en'), '1d5h');
+    assert.equal(short(86400 + 5 * 3600 + 6 * 60, 'en'), '1.2d');
+    assert.equal(short(86400 + 9 * 3600 + 35 * 60, 'en'), '1.3d', '1.399 days rounds down');
+    assert.equal(short(86400, 'en'), '1.0d');
+    assert.equal(short(9 * 86400 + 23 * 3600, 'en'), '9.9d');
+    assert.equal(short(10 * 86400, 'en'), '10d');
+    assert.equal(short(12 * 86400 + 23 * 3600, 'en'), '12d');
     assert.equal(short(5 * 3600 + 6 * 60 + 30, 'en'), '5:06');
     assert.equal(short(3600, 'en'), '1:00');
     assert.equal(short(45 * 60 + 59, 'en'), '45m');
     assert.equal(short(0, 'en'), '0m');
-    assert.equal(short(86400 + 5 * 3600 + 6 * 60, 'zh'), '1天5时');
+    assert.equal(short(86400 + 17 * 3600, 'zh'), '1.7天');
+    assert.equal(short(12 * 86400, 'zh'), '12天');
     assert.equal(short(5 * 3600 + 6 * 60, 'zh'), '5:06');
     assert.equal(short(45 * 60, 'zh'), '45分');
   });
@@ -826,7 +840,7 @@ if (!gameFileExists) {
 
   test('jsdom: the card of a research crop that needs fertilizer has a red State row with the Basic Fertilizer icon and no time', async (t: Any) => {
     const data = researchData(['needFert']);
-    data.words = { problemNeedFert: 'Stagnant: Needs Fertilizer' };
+    data.words = { ...data.words, problemNeedFert: 'Stagnant: Needs Fertilizer' };
     const { doc, core } = await setup(t, { pots: data, rows: [plant(5001, 3, 7200, 0), plant(5002, 8, 3600, 0), plant(5004, 2)] });
     setRemain(core, 5002, 3600 + 5 * 60 + 50);
     const c = card(doc, 1002);
@@ -892,7 +906,7 @@ if (!gameFileExists) {
   test('jsdom: the Chinese card uses the words of the pot data', async (t: Any) => {
     const data = fixture();
     data.lang = 'zh';
-    data.words = { labelFertilizer: '肥料', valueNone: '无', autoOff: '（自动：关）', labelState: '状态', stateMature: '成熟' };
+    data.words = { ...data.words, labelFertilizer: '肥料', valueNone: '无', autoOff: '（自动：关）', labelState: '状态', stateMature: '成熟' };
     const { doc } = await setup(t, { pots: data });
 
     assert.equal(rowWith(card(doc, 1002), '肥料').text, '无（自动：关）', 'the two parts sit side by side');
@@ -1058,17 +1072,16 @@ if (!gameFileExists) {
     assert.ok(doc.querySelector('.greenline-grid'), 'the grid still shows');
   });
 
-  test('jsdom: the English defaults hold each word that the pot data does not give', async (t: Any) => {
+  test('jsdom: a word is the text of the pot data, and its name before the first pot data', async (t: Any) => {
     const { root } = await setup(t);
+    runPageJs(root, 'window.__greenline.setPots(null)');
 
-    assert.equal(runPageJs(root, 'window.__greenline.word("stateGrowing")'), 'Growing');
-    assert.equal(runPageJs(root, 'window.__greenline.word("problemDrought")'), 'Drought');
-    assert.equal(runPageJs(root, 'window.__greenline.word("problemNeedFert")'), 'Needs Fertilizer');
-    assert.equal(runPageJs(root, 'window.__greenline.word("labelFertilizer")'), 'Fertilizer');
+    assert.equal(runPageJs(root, 'window.__greenline.word("stateGrowing")'), 'stateGrowing');
     setPots(root, Object.assign(fixture(), { words: { problemDrought: 'Dry' } }));
     assert.equal(runPageJs(root, 'window.__greenline.word("problemDrought")'), 'Dry');
-    assert.equal(runPageJs(root, 'window.__greenline.word("stateGrowing")'), 'Growing');
+    assert.equal(runPageJs(root, 'window.__greenline.word("stateGrowing")'), 'stateGrowing');
   });
+
 
   // The world hover card: C# sends the pot under the pointer in the game world.
   function setHover(root?: Any, potId?: Any, x?: Any, y?: Any, keepCell?: Any) {

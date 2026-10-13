@@ -1,5 +1,6 @@
 // The windows, the page parts that the script needs, the current pot values, and the frame lookup.
 import type { PageName, PlantState } from './types';
+import { word as modWord } from '../../Shared/i18n/web/words';
 
 interface PageSpec {
   parts: string[];
@@ -38,9 +39,10 @@ export const store: { current: PlantState } = {
   current: { pot: '', replant: true, fert: false, lastCrop: null, words: {} }
 };
 
-export function word(key: string, fallback: string): string {
-  const w = store.current.words && store.current.words[key];
-  return typeof w === 'string' && w ? w : fallback;
+// The mod text of a name that C# sent with setState, or the name. C# calls setState before each install, so
+// the page has no word of its own.
+export function word(key: string): string {
+  return modWord(store.current.words, key);
 }
 
 // The loaded frames of the two windows, as [page name, document].

@@ -2,7 +2,7 @@
 
 Greenline is a mod for the Steam game *Survival Log*. It replaces the HUD plant list with a pot grid and adds Tend All: one click queues the chores of all pots.
 
-Tend All queues pot chores within the character's available Stamina, in the order of the shortest walk. With Auto-replant and Auto-fertilize enabled, it also plants the same crop again with fertilizer. A Farming GR-3 robot can also replant the same crop.
+Tend All queues pot chores within the character's available Stamina, in the order of the shortest walk. With Auto-replant and Auto-fertilize enabled, it also plants the same crop again with fertilizer. A Farming GR-3 robot can also replant the same crop, and it replants a harvested pot before its next harvest.
 
 Nexus page: https://www.nexusmods.com/survivallog/mods/17
 
@@ -58,11 +58,13 @@ When you open the planting window manually, the grey line shows the pot's last c
 
 With a Sowing Module, the Farming GR-3 robot replants from its Sowing Presets, one seed for each pot size. Greenline adds **Same as last crop** to the list of each pot size, right after None. With it, the robot plants the last crop of each pot again. It skips a pot when Greenline does not know the pot's last crop, when there are too few seeds, or when the pot's own Auto-replant setting is disabled. The robot's fertilizer preset stays as you set it.
 
+Greenline also changes the order of the robot's chores: it tills and plants each empty pot before its next harvest, also after it stops to charge. Without Greenline, the robot first harvests every mature pot and does every other chore in the home, so a harvested pot can stay empty for a long time. Only Remove Pests still comes first. A pot that the robot cannot plant (no seed for that pot size in its Sowing Presets, or too few seeds) waits, as without the mod. The robot does no Clean Up, so a withered crop still waits for you. To turn off both robot features, set `EnableRobotReplant` to `false` in the config file: the robot then works as in the game without Greenline, and a robot set to Same as last crop plants nothing in that pot size until you pick a seed.
+
 Greenline stores the Auto-replant checkbox under the grid, and each pot's last crop, Auto-replant setting, and Auto-fertilize setting in the save, using the game's counter table. Restoring a day also restores these values. The game ignores them without Greenline, so you can still load the save after removing the mod.
 
 ## Requirements
 
-- *Survival Log* version 1.1.18153 or later. For game version 1.0, use Greenline 1.0.1.
+- *Survival Log* version 1.1.18599 or later.
 - The [BepInEx Pack for Survival Log](https://www.nexusmods.com/survivallog/mods/12), the BepInEx 6 (IL2CPP) build for the game.
 
 ## Install
@@ -73,11 +75,11 @@ Greenline stores the Auto-replant checkbox under the grid, and each pot's last c
 
 ## Uninstall
 
-Delete `Greenline.dll` from the `BepInEx\plugins` folder. On the next game start, the plant list returns to its appearance and behavior without Greenline, and Tend All is gone. A Farming GR-3 set to Same as last crop plants nothing in that pot size until you pick a seed in its Sowing Presets.
+Delete `Greenline.dll` from the `BepInEx\plugins` folder. On the next game start, the plant list returns to its appearance and behavior without Greenline, and Tend All is gone. A Farming GR-3 set to Same as last crop plants nothing in that pot size until you pick a seed in its Sowing Presets, and the robot returns to the game's chore order.
 
 ## Configuration
 
-The config file is `BepInEx\config\com.ivmakk.survivallog.greenline.cfg`. It controls Tend All, the pot card in the game world, background opacity, and debug logging. See [CONFIG.md](CONFIG.md) for the settings, defaults, and when changes apply.
+The config file is `BepInEx\config\com.ivmakk.survivallog.greenline.cfg`. It controls Tend All, the pot card in the game world, the Farming GR-3 features (Same as last crop and the chore order), background opacity, and debug logging. See [CONFIG.md](CONFIG.md) for the settings, defaults, and when changes apply.
 
 ## Troubleshooting
 

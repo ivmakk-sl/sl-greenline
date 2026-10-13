@@ -20,6 +20,7 @@ namespace Greenline
         internal static ConfigEntry<bool> Verbose;
         internal static ConfigEntry<bool> EnablePatrol;
         internal static ConfigEntry<bool> WorldHoverCard;
+        internal static ConfigEntry<bool> EnableRobotReplant;
         internal static ConfigEntry<float> PanelOpacity;
         internal static ConfigEntry<float> CardOpacity;
 
@@ -35,6 +36,9 @@ namespace Greenline
             WorldHoverCard = Config.Bind(
                 "General", "WorldHoverCard", true,
                 "Show the pot card next to the pot when the pointer is on a pot in the game world. After an error it turns off by itself until the next game start; the rest of the mod keeps working.");
+            EnableRobotReplant = Config.Bind(
+                "General", "EnableRobotReplant", true,
+                "The Farming GR-3: Same as last crop in its Sowing Presets, and it tills and plants each empty pot before its next harvest, also after it stops to charge (only Remove Pests comes first). Set to false for the robot as in the game without Greenline: a robot set to Same as last crop then plants nothing in that pot size until you pick a seed. Restart the game after a change.");
             PanelOpacity = Config.Bind(
                 "General", "PanelOpacity", 0.9f,
                 new ConfigDescription(
@@ -53,7 +57,7 @@ namespace Greenline
                          typeof(GridOnAddMaturePlant),
                          typeof(GridOnRemoveMaturePlant),
                          typeof(GridOnRebuildFloorButtons),
-                         typeof(GridOnSwitchLanguage),
+                         typeof(GridOnApplyLanguageKey),
                          typeof(FramePatch),
                          typeof(HoverOnTrapUpdate),
                          typeof(ReplantOnStartPlant),
@@ -70,7 +74,12 @@ namespace Greenline
                 try { Harmony.CreateClassProcessor(type).Patch(); }
                 catch (Exception e) { Log.LogWarning($"patch {type.Name} failed, its target method is missing: {e.Message}"); }
             }
-            PatchRobot();
+            // The two robot groups share one switch; each still turns off alone when its target is missing.
+            if (EnableRobotReplant.Value)
+            {
+                PatchRobot();
+                PatchRobotOrder();
+            }
 
             Log.LogInfo("Greenline loaded.");
         }
@@ -102,6 +111,17 @@ namespace Greenline
                     Log.LogWarning($"patch {type?.Name ?? "PlantChoreManager.ResolveSowPlan"} failed, its target method is missing, Same as last crop is off: {e.Message}");
                     return;
                 }
+            }
+        }
+
+        // The order of the robot chores is one native detour, apart from Same as last crop, so each turns off alone.
+        private static void PatchRobotOrder()
+        {
+            try { RobotOrderDetour.Apply(); }
+            catch (Exception e)
+            {
+                RobotOrderDetour.Undo();
+                Log.LogWarning($"patch PlantChoreManager.TryResolveChore failed, its target is missing, the robot keeps the game's chore order: {e.Message}");
             }
         }
 
