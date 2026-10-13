@@ -59,12 +59,9 @@ export function shortTime(seconds: number, lang: string): string {
   const total = Math.max(0, Math.floor(seconds));
   const days = Math.floor(total / 86400), hours = Math.floor(total % 86400 / 3600), mins = Math.floor(total % 3600 / 60);
   const zh = lang === 'zh';
-  // From 1 day: days with one decimal, rounded down, so a cell never shows a crop as nearer than it is; whole days
-  // from 10 days. The text stays inside the cell in both languages.
-  if (days > 0) {
-    const tenths = Math.floor(total * 10 / 86400);
-    return (days >= 10 ? String(days) : Math.floor(tenths / 10) + '.' + tenths % 10) + (zh ? '天' : 'd');
-  }
+  // From 10 days the days only, so the text stays inside its cell.
+  if (days >= 10) return days + (zh ? '天' : 'd');
+  if (days > 0) return zh ? days + '天' + hours + '时' : days + 'd' + hours + 'h';
   if (hours > 0) return hours + ':' + pad2(mins);
   return zh ? mins + '分' : mins + 'm';
 }

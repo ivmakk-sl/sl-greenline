@@ -25,7 +25,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The Auto-replant checkbox under the grid is Greenline's own setting in the save, on in a save with no value. A later off stays off. The game's own Replant value is no longer read.
 - The pot card is pinned next to its grid cell, and above its pot in the game world as the card of a trap, each with an arrow.
 - Better performance of the world card: it sends once when the pot under the pointer changes, with no callback, and nothing while the pointer moves.
-- The countdown of a cell shows days with one decimal for 1 day or more (`1.4d`, in Chinese `1.4天`), rounded down, and whole days from 10 days, so it stays inside the cell in both languages: the Chinese `1天17时` ran over the next cell. The pot card keeps the exact time.
 - The page code is TypeScript built by Vite, with Vitest page tests and a dev harness (`npm run dev`); the mod texts use the shared i18n library.
 
 ### Removed
@@ -37,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- A countdown of the pot grid stays inside its cell: a Chinese countdown with days (`1天17时`) uses a smaller text, and from 10 days a countdown shows the days only (`12d`, `12天`).
 - The pot grid follows a language switch at once again on game 1.1.18599, which renamed the language switch (`ConfigManager.ApplyLanguageKey`).
 - A community language pack of the game gives the mod texts of its language file: `zh.json` for a Chinese pack (for example `zh-TW`), else English, with no warning (i18n library 2.0.0). The page scripts have no English words of their own.
 
@@ -61,6 +61,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- A countdown of the pot grid stays inside its cell: a Chinese countdown with days (`1天17时`) uses a smaller text, and from 10 days a countdown shows the days only (`12d`, `12天`).
 - Greenline reduces repeated work in the game's web UI during play. It sends its web page script only when the web page needs it, instead of with every pot update. It no longer resends pot data each second just because a crop with no problem gets closer to maturity. The countdowns and the pot card update four times per second instead of every frame. The pot grid and the pot card keep the same appearance and controls.
 
 ## [1.0.0] - 2026-09-26

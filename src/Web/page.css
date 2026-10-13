@@ -97,6 +97,13 @@
   white-space: nowrap;
 }
 
+/* A Chinese countdown with days (1天17时) is wider than a cell at 8px: each Chinese character is as wide as the font
+   size. At 7px it fits (from 10 days the countdown shows the days only). */
+.greenline-zh .greenline-cell .greenline-time {
+  font-size: 7px;
+  letter-spacing: -0.5px;
+}
+
 .greenline-cell.greenline-mature .greenline-time {
   color: rgb(from var(--gl-gold) r g b / 95%);
   font-weight: bold;

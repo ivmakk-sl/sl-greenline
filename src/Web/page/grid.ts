@@ -12,7 +12,7 @@ const CELLS_PER_LINE = 6;
 function clearGrid(doc: Document): void {
   const grids = doc.querySelectorAll<HTMLElement>('.greenline-grid');
   for (let g = 0; g < grids.length; g++) {
-    grids[g].classList.remove('greenline-grid');
+    grids[g].classList.remove('greenline-grid', 'greenline-zh');
     if (grids[g].style.getPropertyValue('grid-template-columns')) grids[g].style.removeProperty('grid-template-columns');
   }
   const ours = doc.querySelectorAll('.greenline-floor-label, .greenline-cell, .greenline-replant');
@@ -119,6 +119,8 @@ export function applyGrid(doc: Document, state: CoreState | undefined): string {
   }
 
   const popover = doc.querySelector<HTMLElement>(FEATURES.grid[0])!;
+  // The Chinese countdown has a smaller size of its own (page.css).
+  toggleClass(popover, 'greenline-zh', data.lang === 'zh');
   const floors = data.floors || [];
   const keep: Record<string, boolean> = {};
   let line = 1, widest = 1;

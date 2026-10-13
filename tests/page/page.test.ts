@@ -484,23 +484,19 @@ if (!gameFileExists) {
     assert.deepEqual(cellPlaces(doc), before);
   });
 
-  // Days with one decimal, rounded down, so a cell never shows a crop as nearer than it is; whole days from 10 days.
-  test('shortTime: days with one decimal, hours and minutes, or minutes, in English and Chinese', async (t: Any) => {
+  test('shortTime: days and hours (days only from 10 days), hours and minutes, or minutes, in English and Chinese', async (t: Any) => {
     const { root } = await setup(t);
     const short = (s: Any, lang: Any) => runPageJs(root, `window.__greenline.shortTime(${s}, '${lang}')`);
 
-    assert.equal(short(86400 + 5 * 3600 + 6 * 60, 'en'), '1.2d');
-    assert.equal(short(86400 + 9 * 3600 + 35 * 60, 'en'), '1.3d', '1.399 days rounds down');
-    assert.equal(short(86400, 'en'), '1.0d');
-    assert.equal(short(9 * 86400 + 23 * 3600, 'en'), '9.9d');
-    assert.equal(short(10 * 86400, 'en'), '10d');
-    assert.equal(short(12 * 86400 + 23 * 3600, 'en'), '12d');
+    assert.equal(short(86400 + 5 * 3600 + 6 * 60, 'en'), '1d5h');
+    assert.equal(short(9 * 86400 + 23 * 3600, 'en'), '9d23h');
+    assert.equal(short(12 * 86400 + 17 * 3600, 'en'), '12d', 'from 10 days: the days only, so the text stays inside the cell');
     assert.equal(short(5 * 3600 + 6 * 60 + 30, 'en'), '5:06');
     assert.equal(short(3600, 'en'), '1:00');
     assert.equal(short(45 * 60 + 59, 'en'), '45m');
     assert.equal(short(0, 'en'), '0m');
-    assert.equal(short(86400 + 17 * 3600, 'zh'), '1.7天');
-    assert.equal(short(12 * 86400, 'zh'), '12天');
+    assert.equal(short(86400 + 5 * 3600 + 6 * 60, 'zh'), '1天5时');
+    assert.equal(short(12 * 86400 + 17 * 3600, 'zh'), '12天');
     assert.equal(short(5 * 3600 + 6 * 60, 'zh'), '5:06');
     assert.equal(short(45 * 60, 'zh'), '45分');
   });
@@ -911,6 +907,19 @@ if (!gameFileExists) {
 
     assert.equal(rowWith(card(doc, 1002), '肥料').text, '无（自动：关）', 'the two parts sit side by side');
     assert.equal(rowWith(card(doc, 1002), '状态').text, '成熟');
+  });
+
+  // A Chinese countdown with days (1天17时) is wider than a cell at the size of the English one, so the grid carries the
+  // Chinese mark of the pot data for the smaller Chinese countdown of page.css.
+  test('jsdom: the grid has the Chinese mark only with Chinese pot data', async (t: Any) => {
+    const data = fixture();
+    data.lang = 'zh';
+    const { doc, root } = await setup(t, { pots: data });
+    const grid = () => doc.querySelector('.mature-popover');
+
+    assert.ok(grid().classList.contains('greenline-zh'), 'Chinese pot data: the mark');
+    setPots(root, fixture());
+    assert.ok(!grid().classList.contains('greenline-zh'), 'English pot data: no mark');
   });
 
   async function clickCell(doc?: Any, core?: Any, root?: Any, potId?: Any) {
