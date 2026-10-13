@@ -273,6 +273,12 @@ namespace Greenline
     [HarmonyPatch(typeof(RobotComponent), "GetSowPreset")]
     internal static class RobotOnGetSowPreset
     {
-        private static void Postfix(int tier, ref int __result) => __result = RobotSow.Resolve(__result, tier, RobotSow.SowPot);
+        // A failure leaves the game's value (the placeholder, which the robot skips) and logs once, so the robot plan
+        // of the game goes on.
+        private static void Postfix(int tier, ref int __result)
+        {
+            try { __result = RobotSow.Resolve(__result, tier, RobotSow.SowPot); }
+            catch (Exception e) { Plugin.WarnOnce($"Greenline robot: the preset of a sow failed: {e.Message}"); }
+        }
     }
 }
