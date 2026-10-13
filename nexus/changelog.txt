@@ -1,3 +1,20 @@
+v1.2.0 - 2026-10-13
+Added: Tend All walks the shortest route around walls and furniture: the floor you are on first, then the other floors.
+Added: The planting window shows the pot's last crop next to its title, and in red why Auto-replant stopped, for example seeds 0/1.
+Added: Same as last crop in the Sowing Presets of the Farming GR-3: the robot replants each pot with its last crop.
+Added: The Farming GR-3 tills and plants a pot it harvested before its next harvest, also after it stops to charge, so the pot does not stay empty. EnableRobotReplant in the config file turns off both robot features.
+Added: Tend All leaves a pot that a Farming GR-3 is on its way to, so your character and the robot never work on the same pot.
+Changed: Auto-replant under the pot grid is on by default in each save. If you turn it off, it stays off.
+Changed: The pot card shows next to its grid cell or above its pot, with an arrow, and follows the pot when the camera moves.
+Changed: Better performance: the pot card in the game world updates only when you point at a different pot, not on every mouse move.
+Changed: Tend All no longer depends on the game's hidden feature.
+Removed: The game's Tend ×N quick action in the bottom bar.
+Removed: The red reason box above the Plant button, which could push the button out of the window.
+Removed: Support for game versions before 1.1.18599. Greenline 1.2.0 needs Survival Log 1.1.18599 or later.
+Fixed: The pot grid shows the new language at once after you switch the display language.
+Fixed: With a community language pack, Greenline shows its texts in English, or in Chinese for a Chinese pack.
+Fixed: A pot grid countdown stays inside its cell, also in Chinese. From 10 days it shows the days only, for example 12d.
+
 v1.1.0 - 2026-09-29
 Added: Auto-fertilize also plants with a part dose when you have less fertilizer than the pot needs, as the game does since version 1.1.
 Added: Overwinter No.1 shows Needs Fertilizer in the pot grid and on the pot card.

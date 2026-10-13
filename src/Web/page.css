@@ -97,6 +97,13 @@
   white-space: nowrap;
 }
 
+/* A Chinese countdown with days (1天17时) is wider than a cell at 8px: each Chinese character is as wide as the font
+   size. At 7px it fits (from 10 days the countdown shows the days only). */
+.greenline-zh .greenline-cell .greenline-time {
+  font-size: 7px;
+  letter-spacing: -0.5px;
+}
+
 .greenline-cell.greenline-mature .greenline-time {
   color: rgb(from var(--gl-gold) r g b / 95%);
   font-weight: bold;
@@ -529,6 +536,51 @@
 
 .greenline-hover[hidden] {
   display: none;
+}
+
+/* The arrow of the pinned card, as the tooltips of Stats UI: a turned square in the color and the line of
+   the game's tooltip, at the side of the anchor, with its middle at --gl-arrow-y (set by the page script).
+   Over the card, so it hides the card's line where it joins the card and only its two outer sides have a line. */
+.greenline-hover::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: calc(var(--gl-arrow-y, 50%) - 5px);
+  width: 9px;
+  height: 9px;
+  background: rgb(from var(--gl-tip) r g b / var(--gl-card-opacity));
+  border-left: 1px solid rgb(from var(--gl-white) r g b / 22%);
+  border-bottom: 1px solid rgb(from var(--gl-white) r g b / 22%);
+  transform: rotate(45deg);
+}
+
+.greenline-hover.greenline-hover-left::before {
+  left: auto;
+  right: -5px;
+  border: 0;
+  border-top: 1px solid rgb(from var(--gl-white) r g b / 22%);
+  border-right: 1px solid rgb(from var(--gl-white) r g b / 22%);
+}
+
+/* The world card above or under its pot: the arrow at the bottom or the top, with its middle at --gl-arrow-x. */
+.greenline-hover.greenline-hover-above::before,
+.greenline-hover.greenline-hover-below::before {
+  left: calc(var(--gl-arrow-x, 50%) - 5px);
+  right: auto;
+  border: 0;
+}
+
+.greenline-hover.greenline-hover-above::before {
+  top: auto;
+  bottom: -5px;
+  border-right: 1px solid rgb(from var(--gl-white) r g b / 22%);
+  border-bottom: 1px solid rgb(from var(--gl-white) r g b / 22%);
+}
+
+.greenline-hover.greenline-hover-below::before {
+  top: -5px;
+  border-left: 1px solid rgb(from var(--gl-white) r g b / 22%);
+  border-top: 1px solid rgb(from var(--gl-white) r g b / 22%);
 }
 
 .greenline-hover > .greenline-tip {

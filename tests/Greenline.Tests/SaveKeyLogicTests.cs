@@ -79,4 +79,21 @@ public class SaveKeyLogicTests
 
         Assert.Equal(new Dictionary<string, int> { ["greenline.crop.10"] = 15027 }, result);
     }
+    [Fact]
+    public void The_global_Auto_replant_option_is_the_replant_key_of_pot_id_0()
+    {
+        Assert.Equal("greenline.replant.0", SaveKeyLogic.Key("replant", SaveKeyLogic.GlobalPot));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void Rekey_keeps_the_key_of_pot_id_0_with_no_new_id(int value)
+    {
+        var entries = new Dictionary<string, int> { ["greenline.replant.0"] = value, ["greenline.crop.5"] = 15027 };
+
+        var result = SaveKeyLogic.Rekey(entries, new Dictionary<long, long> { [5] = 6 });
+
+        Assert.Equal(new Dictionary<string, int> { ["greenline.replant.0"] = value, ["greenline.crop.6"] = 15027 }, result);
+    }
 }

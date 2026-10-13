@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GameCore.HotUpdate.ReduxUI;
+using SlShared.Json;
 
 namespace Greenline
 {
@@ -11,15 +12,15 @@ namespace Greenline
         private static readonly HashSet<string> loggedMissing = new HashSet<string>();
         private static readonly HashSet<string> loggedOther = new HashSet<string>();
 
-        // The files of page/ are embedded as "<namespace>.Web.page.<file>".
+        // The Vite bundle of page/ is embedded as "Greenline.page.js".
         private static string Script() => script ?? (script =
             WithCss("__greenlineCss", "page.css", PageStyle.OpacityRule(Plugin.PanelOpacity.Value, Plugin.CardOpacity.Value))
-            + PageIncludes.Join(Resource("page.js"), file => Resource("page." + file)));
+            + Resource("page.js"));
 
         // The script text that sets window.<global> to tokens.css, the named CSS file, and any extra CSS,
         // which the page script writes into its frame's style node.
         internal static string WithCss(string global, string cssFile, string extraCss = "") =>
-            "window." + global + "=" + PageJson.Str(Resource("tokens.css") + "\n" + Resource(cssFile) + "\n" + extraCss) + ";";
+            "window." + global + "=" + JsonText.Str(Resource("tokens.css") + "\n" + Resource(cssFile) + "\n" + extraCss) + ";";
 
         internal static string Resource(string fileName)
         {
@@ -95,21 +96,18 @@ namespace Greenline
             if (Plugin.Verbose.Value) Plugin.Log.LogDebug($"Greenline page script: {r}");
         }
 
-        // The pot under the pointer in the game world, or 0. page.js is already in the root page once the
-        // pot data went there; before that, the card has no pot data to show.
-        // The pointer place is x and y as fractions of the screen from the top-left corner.
-        public static void SetHover(long potId, float x, float y)
+        // The pot of the world pot card, or 0, with its place on the screen as fractions from the top-left
+        // corner. The page script is already in the root page once the pot data went there; before that, the
+        // card has no pot data to show. No result: an error comes back as a page message (PageMessages).
+        // `keepCell`: the pointer is over the web UI, so a 0 leaves the card of a grid cell open.
+        public static void SetHover(long potId, float x, float y, bool keepCell)
         {
             var webView = ReduxUISystem.Instance?.GetWebUILayer()?.canvasWebViewPrefab?.WebView;
             if (webView == null) return;
             string place = x.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) + ","
                            + y.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
-            string js = "window.__greenline?window.__greenline.setHover(" + potId + "," + place + "):'no script'";
-            webView.ExecuteJavaScript(js, (Il2CppSystem.Action<string>)(r =>
-            {
-                if (r != null && r.StartsWith("error:", StringComparison.Ordinal)) WorldHover.TurnOff("page " + r);
-                else if (r != "ok" && Plugin.Verbose.Value) Plugin.Log.LogDebug($"Greenline hover script: {r}");
-            }));
+            webView.ExecuteJavaScript("window.__greenline&&window.__greenline.setHover(" + potId + "," + place + "," + (keepCell ? "true" : "false") + ")",
+                (Il2CppSystem.Action<string>)null);
         }
 
         // page.js returns "installed", "installed; missing: <parts>", "no CoreUI1 frame", or
@@ -130,7 +128,7 @@ namespace Greenline
         }
     }
 
-    // Runs plantpanel.js (an embedded resource) in the root page, which reaches the frames of the planting
+    // Runs the plantpanel bundle (the embedded resource "Greenline.plantpanel.js") in the root page, which reaches the frames of the planting
     // window and of the growing crop window itself, and retries for a short time when the frame does not
     // exist yet.
     internal static class PlantPanelScript
@@ -138,12 +136,14 @@ namespace Greenline
         private static string script;
         private static readonly HashSet<string> logged = new HashSet<string>();
 
-        internal static void SetState(long potId, bool replant, bool fert, string reason)
+        // The pot values of a window, and the last-crop line of a planting window (null for none, and for
+        // the window of a growing crop).
+        internal static void SetState(long potId, bool replant, bool fert, ReplantLogic.CropLine line = null, string cropIcon = "")
         {
             var webView = ReduxUISystem.Instance?.GetWebUILayer()?.canvasWebViewPrefab?.WebView;
             if (webView == null) return;
             if (script == null) script = PageScript.WithCss("__greenlinePlantCss", "plantpanel.css") + PageScript.Resource("plantpanel.js");
-            string json = PageJson.PlantPanelJson(potId, replant, fert, reason, GreenWords.Current());
+            string json = PageJson.PlantPanelJson(potId, replant, fert, line, cropIcon, ModTexts.Current().ToDictionary());
             string js = script + ";window.__greenlinePlant.setState(" + json + ");window.__greenlinePlant.install();";
             webView.ExecuteJavaScript(js, (Il2CppSystem.Action<string>)(r =>
             {

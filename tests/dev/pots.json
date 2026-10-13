@@ -1,0 +1,77 @@
+{
+  "lang": "en",
+  "patrol": true,
+  "pendingChores": 4,
+  "replantOn": true,
+  "words": {},
+  "floors": [
+    { "id": 102, "label": "2nd Floor", "cells": [2001, 2002, 2003] },
+    { "id": 1, "label": "Home", "cells": [2004, 2005, 2006, 2007, 2008] }
+  ],
+  "pots": {
+    "2001": {
+      "rowId": 6001, "clickId": 6001, "potName": "Plant Grow Box (Large)", "potIcon": "../../Res/Furniture/UI_Item_Icon_plantcommon_large.png", "potSize": 4,
+      "state": "growing",
+      "cropName": "Watermelon", "cropIcon": "../../Res/Food/UI_Item_Icon_Food_xigua.png", "cropSize": 4, "neverWithers": false,
+      "problems": [], "badge": "",
+      "growRemainSeconds": 0, "growTotalSeconds": 211920, "fertName": "Premium Organic Fertilizer", "fertIcon": "../../Res/Material/UI_Item_Icon_Mat_S_1500310101.png", "fertDose": "1/4",
+      "autoFert": true, "autoReplant": true
+    },
+    "2002": {
+      "rowId": 6002, "clickId": 6002, "potName": "Plant Grow Box (Large)", "potIcon": "../../Res/Furniture/UI_Item_Icon_plantcommon_large.png", "potSize": 4,
+      "state": "growing",
+      "cropName": "Watermelon", "cropIcon": "../../Res/Food/UI_Item_Icon_Food_xigua.png", "cropSize": 4, "neverWithers": false,
+      "problems": ["pest", "drought"], "badge": "pest",
+      "growRemainSeconds": 105960, "growTotalSeconds": 211920, "fertName": "Compound Fertilizer", "fertIcon": "../../Res/Material/UI_Item_Icon_Mat_S_1500310101.png", "fertDose": "",
+      "autoFert": true, "autoReplant": true
+    },
+    "2003": {
+      "rowId": 6003, "clickId": 6003, "potName": "Plant Grow Box (Small)", "potIcon": "../../Res/Furniture/UI_Item_Icon_plantcommon_small.png", "potSize": 1,
+      "state": "growing",
+      "cropName": "Overwinter No.1", "cropIcon": "../../Res/Food/UI_Item_Icon_Food_S_1300900301.png", "cropSize": 1, "neverWithers": true,
+      "problems": ["needFert"], "badge": "needFert",
+      "growRemainSeconds": 40000, "growTotalSeconds": 86400, "fertName": "", "fertIcon": "", "fertDose": "",
+      "autoFert": false, "autoReplant": true
+    },
+    "2004": {
+      "rowId": 6004, "clickId": 6004, "potName": "Plant Grow Box (Small)", "potIcon": "../../Res/Furniture/UI_Item_Icon_plantcommon_small.png", "potSize": 1,
+      "state": "mature",
+      "cropName": "Potato", "cropIcon": "../../Res/Food/UI_Item_Icon_Food_S_1300900301.png", "cropSize": 1, "neverWithers": false,
+      "problems": [], "badge": "",
+      "growRemainSeconds": 0, "growTotalSeconds": 0, "fertName": "", "fertIcon": "", "fertDose": "",
+      "autoFert": false, "autoReplant": false
+    },
+    "2005": {
+      "rowId": 6005, "clickId": 6005, "potName": "Plant Grow Box (Small)", "potIcon": "../../Res/Furniture/UI_Item_Icon_plantcommon_small.png", "potSize": 1,
+      "state": "mature",
+      "cropName": "Overwinter No.1", "cropIcon": "../../Res/Food/UI_Item_Icon_Food_S_1300900301.png", "cropSize": 1, "neverWithers": true,
+      "problems": [], "badge": "",
+      "growRemainSeconds": 0, "growTotalSeconds": 0, "fertName": "", "fertIcon": "", "fertDose": "",
+      "autoFert": false, "autoReplant": true
+    },
+    "2006": {
+      "rowId": 6006, "clickId": 6006, "potName": "Plant Grow Box (Medium)", "potIcon": "../../Res/Furniture/UI_Item_Icon_plantcommon_middle.png", "potSize": 2,
+      "state": "withered",
+      "cropName": "Spinach", "cropIcon": "../../Res/Food/UI_Item_Icon_Food_bocai.png", "cropSize": 2, "neverWithers": false,
+      "problems": [], "badge": "withered",
+      "growRemainSeconds": 0, "growTotalSeconds": 0, "fertName": "", "fertIcon": "", "fertDose": "",
+      "autoFert": false, "autoReplant": true
+    },
+    "2007": {
+      "rowId": 0, "clickId": 6007, "potName": "Plant Grow Box (Medium)", "potIcon": "../../Res/Furniture/UI_Item_Icon_plantcommon_middle.png", "potSize": 2,
+      "state": "poor",
+      "cropName": "", "cropIcon": "", "cropSize": 0, "neverWithers": false,
+      "problems": [], "badge": "",
+      "growRemainSeconds": 0, "growTotalSeconds": 0, "fertName": "", "fertIcon": "", "fertDose": "",
+      "autoFert": false, "autoReplant": true
+    },
+    "2008": {
+      "rowId": 0, "clickId": 6008, "potName": "Standard Small Flowerpot", "potIcon": "../../Res/Furniture/UI_Item_Icon_plantcommon_small.png", "potSize": 1,
+      "state": "empty",
+      "cropName": "", "cropIcon": "", "cropSize": 0, "neverWithers": false,
+      "problems": [], "badge": "",
+      "growRemainSeconds": 0, "growTotalSeconds": 0, "fertName": "", "fertIcon": "", "fertDose": "",
+      "autoFert": false, "autoReplant": true
+    }
+  }
+}

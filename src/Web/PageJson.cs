@@ -1,30 +1,38 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using SlShared.Json;
 
 namespace Greenline
 {
-    // The JSON text between the plugin and the page scripts, built and read by hand: the plugin has no
-    // JSON library. No game or BepInEx type here.
+    // The JSON text between the plugin and the page scripts, built and read by hand, with the strings
+    // of the shared JsonText. No game or BepInEx type here.
     public static class PageJson
     {
-        // The data that plantpanel.js reads: the pot of the open window (as a string, so the page keeps
-        // every digit), its Auto-replant and Auto-fertilize values, the reason line (empty for none), and
-        // the words.
-        public static string PlantPanelJson(long potId, bool replant, bool fert, string reason, IEnumerable<KeyValuePair<string, string>> words)
+        // The data that the plant panel script reads: the pot of the open window (as a string, so the page
+        // keeps every digit), its Auto-replant and Auto-fertilize values, the last-crop line (null when the
+        // mod knows no last crop), and the words.
+        public static string PlantPanelJson(long potId, bool replant, bool fert, ReplantLogic.CropLine line, string cropIcon,
+            IEnumerable<KeyValuePair<string, string>> words)
         {
             var sb = new StringBuilder();
-            sb.Append("{\"pot\":").Append(Str(potId.ToString()))
+            sb.Append("{\"pot\":").Append(JsonText.Str(potId.ToString()))
                 .Append(",\"replant\":").Append(replant ? "true" : "false")
                 .Append(",\"fert\":").Append(fert ? "true" : "false")
-                .Append(",\"reason\":").Append(Str(reason))
-                .Append(",\"words\":{");
+                .Append(",\"lastCrop\":");
+            if (line == null) sb.Append("null");
+            else
+                sb.Append("{\"label\":").Append(JsonText.Str(line.Label))
+                    .Append(",\"name\":").Append(JsonText.Str(line.Crop))
+                    .Append(",\"icon\":").Append(JsonText.Str(cropIcon))
+                    .Append(",\"red\":").Append(JsonText.Str(line.Red)).Append('}');
+            sb.Append(",\"words\":{");
             bool first = true;
             foreach (var w in words)
             {
                 if (!first) sb.Append(',');
                 first = false;
-                sb.Append(Str(w.Key)).Append(':').Append(Str(w.Value));
+                sb.Append(JsonText.Str(w.Key)).Append(':').Append(JsonText.Str(w.Value));
             }
             sb.Append("}}");
             return sb.ToString();
@@ -62,28 +70,12 @@ namespace Greenline
             return (potId, key.Groups[1].Value, on.Groups[1].Value == "true");
         }
 
-        // A JSON string literal, with its quotes. Also a JavaScript string literal.
-        internal static string Str(string s)
+        // The data of a GREENLINE_REPLANT message: the new value of the Auto-replant checkbox, or null for a
+        // message with no value.
+        public static bool? ParseReplant(string json)
         {
-            var sb = new StringBuilder((s ?? "").Length + 2);
-            sb.Append('"');
-            foreach (char c in s ?? "")
-            {
-                switch (c)
-                {
-                    case '"': sb.Append("\\\""); break;
-                    case '\\': sb.Append("\\\\"); break;
-                    case '\n': sb.Append("\\n"); break;
-                    case '\r': sb.Append("\\r"); break;
-                    case '\t': sb.Append("\\t"); break;
-                    default:
-                        if (c < 0x20) sb.Append("\\u").Append(((int)c).ToString("x4"));
-                        else sb.Append(c);
-                        break;
-                }
-            }
-            sb.Append('"');
-            return sb.ToString();
+            var on = string.IsNullOrEmpty(json) ? null : OnPattern.Match(json);
+            return on != null && on.Success ? on.Groups[1].Value == "true" : (bool?)null;
         }
     }
 }

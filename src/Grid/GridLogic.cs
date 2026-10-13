@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using SlShared.Json;
 
 namespace Greenline
 {
@@ -123,19 +124,20 @@ namespace Greenline
         // `patrol` is whether the game's Patrol is available, and `pendingChores` the count of chores
         // that wait, the same as the game's "Tend ×N" quick action.
         public static string ToJson(string lang, IEnumerable<KeyValuePair<string, string>> words, IEnumerable<FloorLine> floors, IEnumerable<Pot> pots,
-            bool patrol, int pendingChores)
+            bool patrol, int pendingChores, bool replantOn)
         {
             var sb = new StringBuilder();
-            sb.Append("{\"lang\":").Append(PageJson.Str(lang))
+            sb.Append("{\"lang\":").Append(JsonText.Str(lang))
                 .Append(",\"patrol\":").Append(patrol ? "true" : "false")
                 .Append(",\"pendingChores\":").Append(pendingChores)
+                .Append(",\"replantOn\":").Append(replantOn ? "true" : "false")
                 .Append(",\"words\":{");
             bool first = true;
             foreach (var w in words)
             {
                 if (!first) sb.Append(',');
                 first = false;
-                sb.Append(PageJson.Str(w.Key)).Append(':').Append(PageJson.Str(w.Value));
+                sb.Append(JsonText.Str(w.Key)).Append(':').Append(JsonText.Str(w.Value));
             }
             sb.Append("},\"floors\":[");
             first = true;
@@ -143,7 +145,7 @@ namespace Greenline
             {
                 if (!first) sb.Append(',');
                 first = false;
-                sb.Append("{\"id\":").Append(f.Floor).Append(",\"label\":").Append(PageJson.Str(f.Label))
+                sb.Append("{\"id\":").Append(f.Floor).Append(",\"label\":").Append(JsonText.Str(f.Label))
                     .Append(",\"cells\":[").Append(string.Join(",", f.Pots)).Append("]}");
             }
             sb.Append("],\"pots\":{");
@@ -153,27 +155,27 @@ namespace Greenline
                 if (!first) sb.Append(',');
                 first = false;
                 bool live = p.State == PotState.Growing || p.State == PotState.Mature;
-                var problems = live ? ProblemOrder.Where(x => (p.Flags & x.Bit) != 0).Select(x => PageJson.Str(x.Name)) : Enumerable.Empty<string>();
+                var problems = live ? ProblemOrder.Where(x => (p.Flags & x.Bit) != 0).Select(x => JsonText.Str(x.Name)) : Enumerable.Empty<string>();
                 sb.Append('"').Append(p.PotId).Append("\":{")
                     .Append("\"rowId\":").Append(p.RowId)
                     .Append(",\"clickId\":").Append(p.ClickId)
-                    .Append(",\"potName\":").Append(PageJson.Str(p.PotName))
-                    .Append(",\"potIcon\":").Append(PageJson.Str(p.PotIcon))
+                    .Append(",\"potName\":").Append(JsonText.Str(p.PotName))
+                    .Append(",\"potIcon\":").Append(JsonText.Str(p.PotIcon))
                     .Append(",\"potSize\":").Append(p.PotSize)
-                    .Append(",\"state\":").Append(PageJson.Str(StateName(p.State)))
-                    .Append(",\"cropName\":").Append(PageJson.Str(p.CropName))
-                    .Append(",\"cropIcon\":").Append(PageJson.Str(p.CropIcon))
+                    .Append(",\"state\":").Append(JsonText.Str(StateName(p.State)))
+                    .Append(",\"cropName\":").Append(JsonText.Str(p.CropName))
+                    .Append(",\"cropIcon\":").Append(JsonText.Str(p.CropIcon))
                     .Append(",\"cropSize\":").Append(p.CropSize)
                     .Append(",\"neverWithers\":").Append(p.NeverWithers ? "true" : "false")
                     .Append(",\"problems\":[").Append(string.Join(",", problems)).Append(']')
-                    .Append(",\"badge\":").Append(PageJson.Str(Badge(p.Flags, p.State)))
+                    .Append(",\"badge\":").Append(JsonText.Str(Badge(p.Flags, p.State)))
                     // The card reads the time to mature of a crop with no problem from the game row, which
                     // the game counts down itself, so the data does not change while such a crop grows.
                     .Append(",\"growRemainSeconds\":").Append(problems.Any() ? p.GrowRemainSeconds : 0)
                     .Append(",\"growTotalSeconds\":").Append(p.GrowTotalSeconds)
-                    .Append(",\"fertName\":").Append(PageJson.Str(p.FertName))
-                    .Append(",\"fertIcon\":").Append(PageJson.Str(p.FertIcon))
-                    .Append(",\"fertDose\":").Append(PageJson.Str(p.FertDose))
+                    .Append(",\"fertName\":").Append(JsonText.Str(p.FertName))
+                    .Append(",\"fertIcon\":").Append(JsonText.Str(p.FertIcon))
+                    .Append(",\"fertDose\":").Append(JsonText.Str(p.FertDose))
                     .Append(",\"autoFert\":").Append(p.AutoFert ? "true" : "false")
                     .Append(",\"autoReplant\":").Append(p.AutoReplant ? "true" : "false")
                     .Append('}');

@@ -12,7 +12,6 @@ namespace Greenline
     {
         private static void Postfix(Ac_CoreUI1_AddMaturePlant ac, State_Web_CoreUI1 state)
         {
-            Patrol.UnlockHeader(state);
             if (Plugin.Verbose.Value && ac != null)
                 Plugin.Log.LogDebug($"Greenline RA_AddMaturePlant: ShowInstanceId={ac.ShowInstanceId} status={ac.Status}");
             PotGrid.MarkDirty();
@@ -39,10 +38,11 @@ namespace Greenline
         }
     }
 
-    // A language switch changes the floor labels and the names. SwitchLanguage returns a UniTask, so
-    // the push waits for the next frame (FramePatch), which gives the switch a frame to complete.
-    [HarmonyPatch(typeof(ConfigManager), "SwitchLanguage")]
-    internal static class GridOnSwitchLanguage
+    // A language switch changes the floor labels and the names. ApplyLanguageKey (SwitchLanguage before game
+    // 1.1.18599) returns a UniTask, so the push waits for the next frame (FramePatch), which gives the switch a
+    // frame to complete.
+    [HarmonyPatch(typeof(ConfigManager), "ApplyLanguageKey")]
+    internal static class GridOnApplyLanguageKey
     {
         private static void Postfix()
         {

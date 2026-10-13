@@ -9,7 +9,7 @@ using GameCore.HotUpdate.Battle.Logic;
 
 namespace Greenline
 {
-    [BepInPlugin(PluginGuid, "Greenline", "1.1.0")]
+    [BepInPlugin(PluginGuid, "Greenline", "1.2.0")]
     [BepInProcess("SurvivalLog.exe")]
     public sealed class Plugin : BasePlugin
     {
@@ -20,6 +20,7 @@ namespace Greenline
         internal static ConfigEntry<bool> Verbose;
         internal static ConfigEntry<bool> EnablePatrol;
         internal static ConfigEntry<bool> WorldHoverCard;
+        internal static ConfigEntry<bool> EnableRobotReplant;
         internal static ConfigEntry<float> PanelOpacity;
         internal static ConfigEntry<float> CardOpacity;
 
@@ -31,10 +32,13 @@ namespace Greenline
                 "Log pot grid, replant, and page script detail at Debug level. Keep off in normal play.");
             EnablePatrol = Config.Bind(
                 "General", "EnablePatrol", true,
-                "Turn on the game's hidden Patrol (Tend All): one button queues the chores of all pots, within your Stamina. Needs planting level 3. Restart the game after a change.");
+                "Tend All: one button queues the chores of all pots, within your Stamina, in the order of the shortest walk. Needs planting level 3. Restart the game after a change.");
             WorldHoverCard = Config.Bind(
                 "General", "WorldHoverCard", true,
-                "Show the pot card next to the pointer when the pointer is on a pot in the game world. After an error it turns off by itself until the next game start; the rest of the mod keeps working.");
+                "Show the pot card next to the pot when the pointer is on a pot in the game world. After an error it turns off by itself until the next game start; the rest of the mod keeps working.");
+            EnableRobotReplant = Config.Bind(
+                "General", "EnableRobotReplant", true,
+                "The Farming GR-3: Same as last crop in its Sowing Presets, and it tills and plants each empty pot before its next harvest, also after it stops to charge (only Remove Pests comes first). Set to false for the robot as in the game without Greenline: a robot set to Same as last crop then plants nothing in that pot size until you pick a seed. Restart the game after a change.");
             PanelOpacity = Config.Bind(
                 "General", "PanelOpacity", 0.9f,
                 new ConfigDescription(
@@ -53,17 +57,16 @@ namespace Greenline
                          typeof(GridOnAddMaturePlant),
                          typeof(GridOnRemoveMaturePlant),
                          typeof(GridOnRebuildFloorButtons),
-                         typeof(GridOnSwitchLanguage),
+                         typeof(GridOnApplyLanguageKey),
                          typeof(FramePatch),
                          typeof(HoverOnTrapUpdate),
-                         typeof(ReplantOnBatchRequest),
-                         typeof(ReplantOnDispatch),
                          typeof(ReplantOnStartPlant),
                          typeof(ReplantOnHarvest),
                          typeof(ReplantOnHarvestPoor),
                          typeof(ReplantOnPlantPanelOpen),
                          typeof(PotOptionsOnDetailsOpen),
-                         typeof(PotOptionMessage),
+                         typeof(GreenlineMessage),
+                         typeof(PageMessages),
                          typeof(SaveKeysOnStartBattle),
                          typeof(SaveKeysOnLoadAgent),
                      })
@@ -71,8 +74,55 @@ namespace Greenline
                 try { Harmony.CreateClassProcessor(type).Patch(); }
                 catch (Exception e) { Log.LogWarning($"patch {type.Name} failed, its target method is missing: {e.Message}"); }
             }
+            // The two robot groups share one switch; each still turns off alone when its target is missing.
+            if (EnableRobotReplant.Value)
+            {
+                PatchRobot();
+                PatchRobotOrder();
+            }
 
             Log.LogInfo("Greenline loaded.");
+        }
+
+        // The patches of the Same as last crop sowing preset work only together, so they attach as one
+        // group, the window entry last: when one target is missing, the group comes off again with one
+        // warning, and the robot window shows and works as without the mod.
+        private static void PatchRobot()
+        {
+            var patched = new List<System.Reflection.MethodBase>();
+            foreach (var type in new[]
+                     {
+                         typeof(RobotOnSetSowPreset),
+                         typeof(RobotOnSowPlant),
+                         typeof(RobotOnGetSowPreset),
+                         null, // the native detour of PlantChoreManager.ResolveSowPlan
+                         typeof(RobotOnBuildSowData),
+                     })
+            {
+                try
+                {
+                    if (type == null) RobotPlanDetour.Apply();
+                    else patched.AddRange(Harmony.CreateClassProcessor(type).Patch());
+                }
+                catch (Exception e)
+                {
+                    foreach (var original in patched) Harmony.Unpatch(original, HarmonyPatchType.All, Harmony.Id);
+                    RobotPlanDetour.Undo();
+                    Log.LogWarning($"patch {type?.Name ?? "PlantChoreManager.ResolveSowPlan"} failed, its target method is missing, Same as last crop is off: {e.Message}");
+                    return;
+                }
+            }
+        }
+
+        // The order of the robot chores is one native detour, apart from Same as last crop, so each turns off alone.
+        private static void PatchRobotOrder()
+        {
+            try { RobotOrderDetour.Apply(); }
+            catch (Exception e)
+            {
+                RobotOrderDetour.Undo();
+                Log.LogWarning($"patch PlantChoreManager.TryResolveChore failed, its target is missing, the robot keeps the game's chore order: {e.Message}");
+            }
         }
 
         private static readonly HashSet<string> warned = new HashSet<string>();
@@ -90,7 +140,6 @@ namespace Greenline
     {
         private static void Postfix()
         {
-            Patrol.TurnOn();
             Replant.PlantWhenReady();
             Replant.CheckQueue();
             PotGrid.PushIfDirty();

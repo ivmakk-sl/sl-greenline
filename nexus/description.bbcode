@@ -1,26 +1,27 @@
 Caring for crops means repeated clicks: select a pot, choose a chore from its menu, then repeat for the next pot. Replanting adds more steps after each harvest.
 
-Greenline automates this chain with Tend All, Auto-replant, and optional Auto-fertilize. You spend less time clicking through menus, while Stamina, seed, and fertilizer costs stay the same.
+Greenline automates this chain with Tend All, Auto-replant, and optional Auto-fertilize, and it helps the Farming GR-3 robot keep your pots planted. You spend less time clicking through menus and walking between pots, while Stamina, seed, and fertilizer costs stay the same.
 
 [size=5]Main features[/size]
 [list]
 [*][b]Pot grid.[/b] See every pot by floor, including empty pots, with crop countdowns and markers for mature crops and problems. Research crops (Overwinter No.1) show Needs Fertilizer, and their Pest or Frost shows as a stop of growth, not a threat.[/*]
-[*][b]Pot details.[/b] Point at a grid cell or a pot in the game world to see crop details. Click a cell to open the pot's menu and move the camera there.[/*]
-[*][b]Tend All.[/b] Queue pot chores with one click from planting level 3, using the game's Stamina costs and limits.[/*]
-[*][b]Auto-replant.[/b] Enable it below the pot grid to let Tend All plant the same crop after harvest. To exclude a pot, disable its Auto-replant checkbox in the planting window or the pot's View window.[/*]
-[*][b]Auto-fertilize.[/b] Enable it per pot to replant with the fertilizer that gives the largest speed bonus, a part dose included. For example, 1 Premium Organic Fertilizer in a pot of size 2 (+50%) beats 2 Basic Fertilizer (+30%). The pot card shows the dose. With no fertilizer, replanting continues without it.[/*]
-[*][b]Replant help.[/b] If replanting cannot proceed, the planting window opens with the reason so you can choose what to do.[/*]
+[*][b]Pot details.[/b] Point at a grid cell or a pot in the game world to see crop details in a card pinned next to it. Click a cell to open the pot's menu and move the camera there.[/*]
+[*][b]Tend All.[/b] Queue pot chores with one click from planting level 3, using the game's Stamina costs and limits. Your character tends the pots in the order of the shortest walk around walls and furniture: the current floor first, then the other floors.[/*]
+[*][b]Auto-replant.[/b] After Tend All harvests a pot, it plants the same crop again. Seeds from a harvest earlier in the same run count. It is on by default. Turn it off with the checkbox below the pot grid. To skip one pot, untick its Auto-replant checkbox in the planting window or the pot's View window.[/*]
+[*][b]Auto-fertilize.[/b] Turn it on for a pot, and each replant adds the fertilizer with the largest speed bonus, also when you have less than a full dose. For example, 1 Premium Organic Fertilizer in a pot of size 2 (+50%) beats 2 Basic Fertilizer (+30%). The pot card shows the dose. With no fertilizer, the replant goes on without it.[/*]
+[*][b]Replant help.[/b] If replanting cannot proceed, the planting window opens. Next to its title, a short line shows the pot's last crop and the reason, for example seeds 0/1, so you can choose what to do.[/*]
+[*][b]Farming GR-3.[/b] Adds a Same as last crop mode to its Sowing Presets: the robot replants each pot with its last crop. The robot also tills and plants a pot it harvested before its next harvest, so the pot does not stay empty after the robot stops to charge. You can turn both off in the config file.[/*]
 [*][b]English and Chinese.[/b][/*]
 [/list]
 
-Greenline stores each pot's last crop, Auto-replant setting, and Auto-fertilize setting in the save. The game ignores these values without Greenline, so you can still load the save after removing the mod.
+Greenline stores the Auto-replant checkbox, and each pot's last crop, Auto-replant setting, and Auto-fertilize setting in the save. The game ignores these values without Greenline, so you can still load the save after removing the mod. A Farming GR-3 set to Same as last crop then plants nothing in that pot size until you pick a seed.
 
 [size=5]You may also like[/size]
 If you like Greenline, try [url=https://www.nexusmods.com/survivallog/mods/15]Trapline[/url] for one-click trap collection and a compact trap grid.
 
 [size=5]Requirements[/size]
 [list]
-[*]Survival Log version 1.1.18153 or later. For game version 1.0, use Greenline 1.0.1.[/*]
+[*]Survival Log version 1.1.18599 or later.[/*]
 [*][url=https://www.nexusmods.com/survivallog/mods/12]BepInEx for Survival Log[/url]. Install it first.[/*]
 [/list]
 
@@ -34,11 +35,9 @@ If you like Greenline, try [url=https://www.nexusmods.com/survivallog/mods/15]Tr
 Delete [font=Courier New]Greenline.dll[/font] from the [font=Courier New]BepInEx\plugins[/font] folder.
 
 [size=5]Configuration[/size]
-Greenline creates [font=Courier New]BepInEx\config\com.ivmakk.survivallog.greenline.cfg[/font] when you first start the game with the mod installed.
+To change mod settings, edit [font=Courier New]BepInEx\config\com.ivmakk.survivallog.greenline.cfg[/font] while the game is closed (see [url=https://github.com/ivmakk-sl/sl-greenline/blob/main/CONFIG.md]CONFIG.md[/url] for every setting). Changes apply at the next game start.
 
-[font=Courier New]EnablePatrol[/font] controls Tend All. [font=Courier New]WorldHoverCard[/font] controls the pot card in the game world. Both are enabled by default. The file also contains background opacity settings and a debug logging setting.
-
-Edit the file while the game is closed. Changes apply at the next game start. See [url=https://github.com/ivmakk-sl/sl-greenline/blob/main/CONFIG.md]CONFIG.md[/url] for all settings, defaults, and accepted values.
+There you can turn off Tend All, the pot card in the game world, and the Farming GR-3 features, and set how see-through the pot grid and the pot card are.
 
 [size=5]Source and license[/size]
 Open source under GPL-3.0: [url=https://github.com/ivmakk-sl/sl-greenline]github.com/ivmakk-sl/sl-greenline[/url]

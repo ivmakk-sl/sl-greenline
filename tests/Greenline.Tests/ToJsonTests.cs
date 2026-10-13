@@ -61,7 +61,7 @@ public class ToJsonTests
     [Fact]
     public void ToJson_makes_the_fixture()
     {
-        string json = GridLogic.ToJson("en", FixtureWords(), FixtureFloors(), FixturePots(), true, 3);
+        string json = GridLogic.ToJson("en", FixtureWords(), FixtureFloors(), FixturePots(), true, 3, true);
 
         var expected = JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", "pots.json")));
         var actual = JsonNode.Parse(json);
@@ -75,7 +75,7 @@ public class ToJsonTests
         pot.GrowRemainSeconds = remain;
         pot.GrowTotalSeconds = 211920;
         var floors = new List<GridLogic.FloorLine> { new GridLogic.FloorLine { Floor = 1, Label = "Home", Pots = new List<long> { 1 } } };
-        return JsonNode.Parse(GridLogic.ToJson("en", FixtureWords(), floors, new[] { pot }, false, 0))["pots"]["1"];
+        return JsonNode.Parse(GridLogic.ToJson("en", FixtureWords(), floors, new[] { pot }, false, 0, true))["pots"]["1"];
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public class ToJsonTests
         pot.Flags = GridLogic.NeedFert;
         var floors = new List<GridLogic.FloorLine> { new GridLogic.FloorLine { Floor = 1, Label = "Home", Pots = new List<long> { 1 } } };
 
-        var json = JsonNode.Parse(GridLogic.ToJson("en", FixtureWords(), floors, new[] { pot }, false, 0))["pots"]["1"];
+        var json = JsonNode.Parse(GridLogic.ToJson("en", FixtureWords(), floors, new[] { pot }, false, 0, true))["pots"]["1"];
 
         Assert.Empty(json["problems"].AsArray());
     }
@@ -130,7 +130,7 @@ public class ToJsonTests
         pot.FertDose = "1/4";
         var floors = new List<GridLogic.FloorLine> { new GridLogic.FloorLine { Floor = 1, Label = "Home", Pots = new List<long> { 1 } } };
 
-        var json = JsonNode.Parse(GridLogic.ToJson("en", FixtureWords(), floors, new[] { pot }, false, 0))["pots"]["1"];
+        var json = JsonNode.Parse(GridLogic.ToJson("en", FixtureWords(), floors, new[] { pot }, false, 0, true))["pots"]["1"];
 
         Assert.True(json["neverWithers"].GetValue<bool>());
         Assert.Equal("1/4", json["fertDose"].GetValue<string>());
@@ -148,23 +148,64 @@ public class ToJsonTests
         var pot = Empty(1, 0, "A \"big\" pot\\\nnew line", Small, 1, GridLogic.PotState.Empty);
         var floors = new List<GridLogic.FloorLine> { new GridLogic.FloorLine { Floor = 1, Label = "Home", Pots = new List<long> { 1 } } };
 
-        string json = GridLogic.ToJson("en", new List<KeyValuePair<string, string>>(), floors, new[] { pot }, false, 0);
+        string json = GridLogic.ToJson("en", new List<KeyValuePair<string, string>>(), floors, new[] { pot }, false, 0, true);
 
         Assert.Equal("A \"big\" pot\\\nnew line", JsonNode.Parse(json)["pots"]["1"]["potName"].GetValue<string>());
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ToJson_writes_the_global_Auto_replant_option(bool on)
+    {
+        string json = GridLogic.ToJson("en", FixtureWords(), FixtureFloors(), FixturePots(), true, 3, on);
+
+        Assert.Equal(on, JsonNode.Parse(json)!["replantOn"]!.GetValue<bool>());
+    }
+
+    [Theory]
+    [InlineData("{\"on\":true}", true)]
+    [InlineData("{\"on\":false}", false)]
+    [InlineData("{ \"on\" : true }", true)]
+    public void ParseReplant_reads_the_value_of_the_checkbox(string json, bool on)
+    {
+        Assert.Equal(on, PageJson.ParseReplant(json));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("{}")]
+    [InlineData("{\"on\":1}")]
+    public void ParseReplant_rejects_a_message_with_no_value(string json)
+    {
+        Assert.Null(PageJson.ParseReplant(json));
+    }
+
     [Fact]
-    public void PlantPanelJson_has_the_pot_the_two_options_the_reason_and_the_words()
+    public void PlantPanelJson_has_the_pot_the_two_options_the_last_crop_line_and_the_words()
     {
         var words = new[] { new KeyValuePair<string, string>("autoFert", "Auto-\"fertilize\"") };
+        var line = new ReplantLogic.CropLine { Label = "Last crop:", Crop = "Watermelon", Red = "Replant stopped: seeds 0/1" };
 
-        var json = JsonNode.Parse(PageJson.PlantPanelJson(4294990630, false, true, "0 of 1 Seeds", words))!;
+        var json = JsonNode.Parse(PageJson.PlantPanelJson(4294990630, false, true, line, "../../Res/Food/xigua.png", words))!;
 
         Assert.Equal("4294990630", json["pot"]!.GetValue<string>());
         Assert.False(json["replant"]!.GetValue<bool>());
         Assert.True(json["fert"]!.GetValue<bool>());
-        Assert.Equal("0 of 1 Seeds", json["reason"]!.GetValue<string>());
+        Assert.Equal("Last crop:", json["lastCrop"]!["label"]!.GetValue<string>());
+        Assert.Equal("Watermelon", json["lastCrop"]!["name"]!.GetValue<string>());
+        Assert.Equal("../../Res/Food/xigua.png", json["lastCrop"]!["icon"]!.GetValue<string>());
+        Assert.Equal("Replant stopped: seeds 0/1", json["lastCrop"]!["red"]!.GetValue<string>());
         Assert.Equal("Auto-\"fertilize\"", json["words"]!["autoFert"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void PlantPanelJson_has_no_last_crop_when_the_mod_knows_none()
+    {
+        var json = JsonNode.Parse(PageJson.PlantPanelJson(12, true, false, null, "", new KeyValuePair<string, string>[0]))!;
+
+        Assert.Null(json["lastCrop"]);
+        Assert.True(json.AsObject().ContainsKey("lastCrop"));
     }
 
     [Theory]

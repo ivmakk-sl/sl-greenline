@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Greenline
@@ -22,28 +23,31 @@ namespace Greenline
             return nearest;
         }
 
-        // When the hover goes to page.js: a change of the hovered pot at once, a pointer move at most
-        // MovesPerSecond times, and nothing while the pointer stays still.
+        // When the world pot card goes to the page: at a change of the pot under the pointer, at a move of
+        // that pot on the screen by a pixel or more while its card shows (a camera move, so the card follows
+        // the pot), and once when the pointer leaves the web UI (the card of a grid cell gets no mouseleave
+        // then). Nothing for a pointer move on the same pot, and nothing while no pot is under the pointer.
         public sealed class Sender
         {
-            public const float MovesPerSecond = 30f;
+            private long lastPot;
+            private int lastX, lastY;
+            private bool wasOverUi;
 
-            private long lastPot = -1;
-            private float lastX, lastY, nextMove;
-
-            // Whether the hovered pot (0 for none) and the pointer place go to the page now. `now` is in
-            // seconds.
-            public bool Send(long pot, float x, float y, float now)
+            // Whether the pot under the pointer (0 for none) and its place on the screen in pixels go to the
+            // page now. `overUi`: the pointer is over the web UI.
+            public bool Send(long pot, float x, float y, bool overUi)
             {
+                bool leftUi = wasOverUi && !overUi;
+                wasOverUi = overUi;
+                int px = (int)Math.Round(x), py = (int)Math.Round(y);
                 if (pot == lastPot)
                 {
-                    if (x == lastX && y == lastY) return false;
-                    if (now < nextMove) return false;
-                    nextMove = now + 1f / MovesPerSecond;
+                    if (pot == 0) return leftUi;
+                    if (px == lastX && py == lastY) return false;
                 }
                 lastPot = pot;
-                lastX = x;
-                lastY = y;
+                lastX = px;
+                lastY = py;
                 return true;
             }
 

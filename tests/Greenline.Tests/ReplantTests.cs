@@ -42,25 +42,24 @@ public class ReplantTests
     [Fact]
     public void Classify_plants_when_every_check_passes()
     {
-        Assert.Equal(ReplantLogic.Reason.Plant, ReplantLogic.Classify(true, true, true, true, 5, 2).Reason);
+        Assert.Equal(ReplantLogic.Reason.Plant, ReplantLogic.Classify(true, true, true, 5, 2).Reason);
     }
 
     [Theory]
-    [InlineData(false, true, true, true, ReplantLogic.Reason.TooFewSeeds)]
-    [InlineData(true, true, true, false, ReplantLogic.Reason.DoesNotFit)]
-    [InlineData(false, false, false, false, ReplantLogic.Reason.DoesNotFit)]
-    [InlineData(false, false, true, true, ReplantLogic.Reason.TooFewSeeds)]
-    [InlineData(true, false, false, true, ReplantLogic.Reason.NotEnoughLight)]
-    [InlineData(true, true, false, true, ReplantLogic.Reason.TooCold)]
-    public void Classify_gives_the_first_failed_check(bool enough, bool light, bool temp, bool fits, ReplantLogic.Reason reason)
+    [InlineData(false, true, true, ReplantLogic.Reason.TooFewSeeds)]
+    [InlineData(false, false, false, ReplantLogic.Reason.TooFewSeeds)]
+    [InlineData(false, false, true, ReplantLogic.Reason.TooFewSeeds)]
+    [InlineData(true, false, false, ReplantLogic.Reason.NotEnoughLight)]
+    [InlineData(true, true, false, ReplantLogic.Reason.TooCold)]
+    public void Classify_gives_the_first_failed_check(bool enough, bool light, bool temp, ReplantLogic.Reason reason)
     {
-        Assert.Equal(reason, ReplantLogic.Classify(enough, light, temp, fits, 1, 2).Reason);
+        Assert.Equal(reason, ReplantLogic.Classify(enough, light, temp, 1, 2).Reason);
     }
 
     [Fact]
     public void Classify_keeps_the_seed_counts_for_too_few_seeds()
     {
-        var decision = ReplantLogic.Classify(false, true, true, true, 1, 2);
+        var decision = ReplantLogic.Classify(false, true, true, 1, 2);
 
         Assert.Equal((ReplantLogic.Reason.TooFewSeeds, 1, 2), (decision.Reason, decision.Have, decision.Need));
     }
@@ -103,40 +102,74 @@ public class ReplantTests
         Assert.Equal(0, ReplantLogic.PickFertilizer(Pool(), 1));
     }
 
-    private static readonly Dictionary<string, string> Words = new Dictionary<string, string>
+    // The words of GreenWords in each display language (the game's texts of WebUI_PlantPanel_21 and _23
+    // for light and cold).
+    private static readonly Dictionary<string, string> English = new Dictionary<string, string>
     {
-        ["reasonPrefix"] = "Auto-replant stopped: {0}",
-        ["reasonNoLastCrop"] = "last crop unknown",
-        ["reasonSeeds"] = "{0} of {1} {2}",
-        ["reasonFit"] = "the crop does not fit this pot",
+        ["lastCrop"] = "Last crop:",
+        ["replantStopped"] = "Replant stopped: {reason}",
+        ["reasonSeeds"] = "seeds {have}/{need}",
         ["reasonLight"] = "not enough light",
         ["reasonCold"] = "too cold",
     };
 
+    private static readonly Dictionary<string, string> Chinese = new Dictionary<string, string>
+    {
+        ["lastCrop"] = "上次作物：",
+        ["replantStopped"] = "自动补种中止：{reason}",
+        ["reasonSeeds"] = "种子 {have}/{need}",
+        ["reasonLight"] = "光照不足",
+        ["reasonCold"] = "温度过低",
+    };
+
+    private static ReplantLogic.Decision Stopped(ReplantLogic.Reason reason, int have = 0, int need = 0) =>
+        new ReplantLogic.Decision { Reason = reason, Have = have, Need = need };
+
     [Theory]
-    [InlineData(ReplantLogic.Reason.NoLastCrop, 0, 0, "Auto-replant stopped: last crop unknown")]
-    [InlineData(ReplantLogic.Reason.TooFewSeeds, 1, 4, "Auto-replant stopped: 1 of 4 Strawberry Seeds")]
-    [InlineData(ReplantLogic.Reason.DoesNotFit, 3, 1, "Auto-replant stopped: the crop does not fit this pot")]
-    [InlineData(ReplantLogic.Reason.NotEnoughLight, 3, 1, "Auto-replant stopped: not enough light")]
-    [InlineData(ReplantLogic.Reason.TooCold, 3, 1, "Auto-replant stopped: too cold")]
-    public void ReasonText_gives_the_reason_line(ReplantLogic.Reason reason, int have, int need, string expected)
+    [InlineData(ReplantLogic.Reason.TooFewSeeds, 1, 2, "Replant stopped: seeds 1/2")]
+    [InlineData(ReplantLogic.Reason.SeedNotInList, 0, 3, "Replant stopped: seeds 0/3")]
+    [InlineData(ReplantLogic.Reason.NotEnoughLight, 3, 1, "Replant stopped: not enough light")]
+    [InlineData(ReplantLogic.Reason.TooCold, 3, 1, "Replant stopped: too cold")]
+    public void LineText_gives_the_last_crop_and_the_red_line_of_a_stopped_replant(ReplantLogic.Reason reason, int have, int need, string red)
     {
-        var decision = new ReplantLogic.Decision { Reason = reason, Have = have, Need = need };
+        var line = ReplantLogic.LineText("Watermelon", Stopped(reason, have, need), English);
 
-        Assert.Equal(expected, ReplantLogic.ReasonText(decision, "Strawberry Seeds", Words));
+        Assert.NotNull(line);
+        Assert.Equal(("Last crop:", "Watermelon", red), (line.Label, line.Crop, line.Red));
     }
 
     [Fact]
-    public void ReasonText_counts_no_seed_when_the_containers_have_none()
+    public void LineText_counts_no_seed_when_the_seed_is_not_in_the_list()
     {
-        var decision = new ReplantLogic.Decision { Reason = ReplantLogic.Reason.SeedNotInList, Need = 2 };
+        var line = ReplantLogic.LineText("Watermelon", Stopped(ReplantLogic.Reason.SeedNotInList, have: 5, need: 1), English);
 
-        Assert.Equal("Auto-replant stopped: 0 of 2 Strawberry Seeds", ReplantLogic.ReasonText(decision, "Strawberry Seeds", Words));
+        Assert.Equal("Replant stopped: seeds 0/1", line.Red);
+    }
+
+    [Theory]
+    [InlineData(ReplantLogic.Reason.SeedNotInList, 0, 1, "自动补种中止：种子 0/1")]
+    [InlineData(ReplantLogic.Reason.TooFewSeeds, 1, 2, "自动补种中止：种子 1/2")]
+    [InlineData(ReplantLogic.Reason.NotEnoughLight, 3, 1, "自动补种中止：光照不足")]
+    [InlineData(ReplantLogic.Reason.TooCold, 3, 1, "自动补种中止：温度过低")]
+    public void LineText_is_in_Chinese_with_the_Chinese_words(ReplantLogic.Reason reason, int have, int need, string red)
+    {
+        var line = ReplantLogic.LineText("西瓜", Stopped(reason, have, need), Chinese);
+
+        Assert.Equal(("上次作物：", "西瓜", red), (line.Label, line.Crop, line.Red));
     }
 
     [Fact]
-    public void ReasonText_is_empty_for_a_planting()
+    public void LineText_has_no_red_line_for_a_planting_window_by_hand_or_a_planting()
     {
-        Assert.Equal("", ReplantLogic.ReasonText(new ReplantLogic.Decision { Reason = ReplantLogic.Reason.Plant }, "x", Words));
+        Assert.Equal("", ReplantLogic.LineText("Watermelon", null, English).Red);
+        Assert.Equal("", ReplantLogic.LineText("Watermelon", Stopped(ReplantLogic.Reason.Plant), English).Red);
+    }
+
+    [Fact]
+    public void LineText_gives_no_line_when_the_last_crop_is_unknown()
+    {
+        Assert.Null(ReplantLogic.LineText("", null, English));
+        Assert.Null(ReplantLogic.LineText("", Stopped(ReplantLogic.Reason.NoLastCrop), English));
+        Assert.Null(ReplantLogic.LineText("Watermelon", Stopped(ReplantLogic.Reason.NoLastCrop), English));
     }
 }

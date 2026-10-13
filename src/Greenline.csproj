@@ -4,28 +4,47 @@
        This file names the plugin and adds the assemblies that only this mod uses. -->
   <PropertyGroup>
     <AssemblyName>Greenline</AssemblyName>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
+  </PropertyGroup>
+
+  <!-- The two page scripts are built from src/Web/ by Vite (package.json at the mod root), each into
+       one file, which the plugin embeds under one name. The build runs only when a page source changed.
+       The CSS files are embedded as they are: C# hands them to the page scripts. -->
+  <PropertyGroup>
+    <ModRoot>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..'))</ModRoot>
+    <PageBundle>$(ModRoot)\obj\page\page.js</PageBundle>
+    <PlantPanelBundle>$(ModRoot)\obj\page\plantpanel.js</PlantPanelBundle>
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Web\page.js" />
-    <EmbeddedResource Include="Web\page\*.js" />
-    <EmbeddedResource Include="Web\plantpanel.js" />
+    <PageSource Include="Web\**\*.ts;Web\**\*.js" />
+    <PageSource Include="$(ModRoot)\package.json;$(ModRoot)\package-lock.json;$(ModRoot)\vite.config.ts" />
+    <EmbeddedResource Include="$(PageBundle)" LogicalName="Greenline.page.js" />
+    <EmbeddedResource Include="$(PlantPanelBundle)" LogicalName="Greenline.plantpanel.js" />
     <EmbeddedResource Include="Web\tokens.css" />
     <EmbeddedResource Include="Web\page.css" />
     <EmbeddedResource Include="Web\plantpanel.css" />
+    <!-- The i18n files of the mod texts, read by the i18n library copy. -->
+    <EmbeddedResource Include="i18n\*.json" LogicalName="Greenline.i18n.%(Filename)%(Extension)" />
   </ItemGroup>
+
+  <Target Name="BuildPage" BeforeTargets="BeforeBuild" Inputs="@(PageSource)" Outputs="$(PageBundle);$(PlantPanelBundle)">
+    <Error Condition="!Exists('$(ModRoot)\node_modules')" Text="Greenline: the npm packages are missing. Run npm ci in $(ModRoot) first." />
+    <Exec Command="npm run build" WorkingDirectory="$(ModRoot)" />
+  </Target>
 
   <!-- The HUD plant list and the planting window are pages of the Vuplex web view. R3 has the
        ReactiveProperty state of the web panels, and ObservableCollections the seed and fertilizer
        lists of the planting window. InputLegacyModule has the pointer place for the world hover card,
-       and PhysicsModule the pointer ray hits. -->
+       and PhysicsModule the pointer ray hits. AIModule has the navigation mesh for the walk lengths of the
+       Patrol route. -->
   <ItemGroup>
     <_Ref Include="$(BepInExInterop)\Vuplex.WebView.dll" />
     <_Ref Include="$(BepInExInterop)\R3.dll" />
     <_Ref Include="$(BepInExInterop)\ObservableCollections.dll" />
     <_Ref Include="$(BepInExInterop)\UnityEngine.InputLegacyModule.dll" />
     <_Ref Include="$(BepInExInterop)\UnityEngine.PhysicsModule.dll" />
+    <_Ref Include="$(BepInExInterop)\UnityEngine.AIModule.dll" />
     <Reference Include="@(_Ref)">
       <HintPath>%(FullPath)</HintPath>
       <Private>false</Private>

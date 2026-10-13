@@ -2,6 +2,7 @@
   "lang": "en",
   "patrol": true,
   "pendingChores": 3,
+  "replantOn": true,
   "words": {
     "stateGrowing": "Growing",
     "valueNone": "None"

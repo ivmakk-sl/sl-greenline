@@ -48,12 +48,16 @@ namespace Greenline
             nextCheck = now + CheckSeconds;
             try
             {
-                var pots = Scan();
+                // One pass over the furniture serves the grid and the count of the Tend All button.
+                var home = HomePots();
+                var pots = Scan(home);
                 lastPots = pots;
                 var floors = GridLogic.LayoutFloors(pots, ParseFloorButtonIds(lastFloorButtonsJson));
                 var config = ConfigManager.Instance;
                 foreach (var floor in floors) floor.Label = FloorLabel(config, floor.Floor);
-                string json = GridLogic.ToJson(Lang(), GreenWords.Current(), floors, pots, Patrol.Available(), Patrol.PendingChores());
+                var texts = ModTexts.Current();
+                string json = GridLogic.ToJson(texts.Language, texts.ToDictionary(), floors, pots, Patrol.Available(), Patrol.PendingChores(home),
+                    PotOptions.GlobalReplant());
                 if (json == lastJson)
                 {
                     PageScript.Check();
@@ -64,9 +68,6 @@ namespace Greenline
             }
             catch (Exception e) { Plugin.WarnOnce($"Greenline: pot grid push failed: {e.Message}"); }
         }
-
-        internal static string Lang() =>
-            ConfigManager.Instance?.customCache?.LanguageType == LanguageType.Chinese ? "zh" : "en";
 
         // Called by PageScript when the page had no CoreUI1 frame, so the next check sends the data again.
         internal static void ForgetLastPush() => lastJson = null;
@@ -85,15 +86,15 @@ namespace Greenline
 
         // The pots of the home, with the filters of the game's own Patrol scan
         // (PlantChoreBatchManager.Scan): a shown furniture on an unlocked floor and area of the home
-        // map, whose furniture config names a pot config.
-        private static List<GridLogic.Pot> Scan()
+        // map, whose furniture config names a pot config. The grid and Patrol read the same pots.
+        internal static List<(Furniture Furniture, Config_Furniture Config, PlantComponent Plant)> HomePots()
         {
             var world = BaseSingleton<BattleLogicWorld>.Instance;
             var agentManager = world._AgentManager;
             var tagManager = world._TagManager;
             var config = ConfigManager.Instance;
 
-            var pots = new List<GridLogic.Pot>();
+            var pots = new List<(Furniture, Config_Furniture, PlantComponent)>();
             var furnitures = agentManager.GetAllFurnitures();
             if (furnitures == null) return pots;
             for (int i = 0; i < furnitures.Count; i++)
@@ -107,7 +108,29 @@ namespace Greenline
                 if (furnitureConfig == null || furnitureConfig.PlantFurnitureID <= 0) continue;
                 var plant = furniture.GetAgentComponent<PlantComponent>();
                 if (plant == null) continue;
+                pots.Add((furniture, furnitureConfig, plant));
+            }
+            return pots;
+        }
 
+        internal static GridLogic.PotState ToPotState(PlantState state)
+        {
+            switch (state)
+            {
+                case PlantState.Growing: return GridLogic.PotState.Growing;
+                case PlantState.Mature: return GridLogic.PotState.Mature;
+                case PlantState.Withered: return GridLogic.PotState.Withered;
+                case PlantState.Poor: return GridLogic.PotState.Poor;
+                default: return GridLogic.PotState.Empty;
+            }
+        }
+
+        private static List<GridLogic.Pot> Scan(List<(Furniture Furniture, Config_Furniture Config, PlantComponent Plant)> home)
+        {
+            var config = ConfigManager.Instance;
+            var pots = new List<GridLogic.Pot>();
+            foreach (var (furniture, furnitureConfig, plant) in home)
+            {
                 var potConfig = config.Get_Config_FurniturePlant(furnitureConfig.PlantFurnitureID);
                 var pot = new GridLogic.Pot
                 {
@@ -155,18 +178,6 @@ namespace Greenline
                 pots.Add(pot);
             }
             return pots;
-        }
-
-        private static GridLogic.PotState ToPotState(PlantState state)
-        {
-            switch (state)
-            {
-                case PlantState.Growing: return GridLogic.PotState.Growing;
-                case PlantState.Mature: return GridLogic.PotState.Mature;
-                case PlantState.Withered: return GridLogic.PotState.Withered;
-                case PlantState.Poor: return GridLogic.PotState.Poor;
-                default: return GridLogic.PotState.Empty;
-            }
         }
 
         private static string Text(ConfigManager config, string key)
