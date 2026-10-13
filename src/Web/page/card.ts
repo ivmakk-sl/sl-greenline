@@ -1,5 +1,5 @@
 // The pot card: its model from the pot data and the game row, and its one node.
-import { FERT_ICON, TILL_ICON, barTime, fullTime, hasCrop, noHarvestWindow, store, toggleClass, word } from './core';
+import { FERT_ICON, ROW_STATUS, TILL_ICON, barTime, fullTime, hasCrop, noHarvestWindow, store, toggleClass, word } from './core';
 import type { CoreState, PlantRow, Pot } from './types';
 
 const MATURE_ICON = '../../Res/PlantAnomaly/MatureReady.png';
@@ -10,8 +10,8 @@ const GROWING_ICON = '../../Res/icon/icon_line_nature_18.png';
 // For each problem: its word, its icon, and the game status of a row that counts its time down (0 for
 // none).
 const PROBLEM_LINES: Record<string, [string, string, number]> = {
-  pest: ['problemPest', '../../Res/PlantAnomaly/Pest.png', 3],
-  frost: ['problemFrost', '../../Res/PlantAnomaly/Frost.png', 4],
+  pest: ['problemPest', '../../Res/PlantAnomaly/Pest.png', ROW_STATUS.pest],
+  frost: ['problemFrost', '../../Res/PlantAnomaly/Frost.png', ROW_STATUS.frost],
   drought: ['problemDrought', '../../Res/PlantAnomaly/Drought.png', 0],
   weed: ['problemWeed', '../../Res/PlantAnomaly/Weed.png', 0],
   lightLow: ['problemLightLow', '../../Res/PlantAnomaly/LightLow.png', 0],
@@ -106,7 +106,7 @@ export function cardModel(pot: Pot, row: PlantRow | null | undefined, state: Cor
   // in the pot data but a problem in the row (the next push brings it), no bar shows.
   let left = -1;
   if (problems.length) left = pot.growRemainSeconds || 0;
-  else if (status === 0) left = remain;
+  else if (status === ROW_STATUS.growing) left = remain;
   if (pot.state === 'growing' && pot.growTotalSeconds > 0 && left >= 0) {
     rows.push({
       key: word('labelGrowth'),
@@ -116,7 +116,7 @@ export function cardModel(pot: Pot, row: PlantRow | null | undefined, state: Cor
       }
     });
   }
-  if (pot.state === 'mature' && status === 1 && !noHarvestWindow(row!)) {
+  if (pot.state === 'mature' && status === ROW_STATUS.mature && !noHarvestWindow(row!)) {
     rows.push({
       key: gameWord(state && state.i18n_plantHarvest, word('labelHarvest')),
       bar: { fill: fillOf(remain / row!.harvestTotalSeconds), kind: 'greenline-ripe', text: barTime(remain, lang), pause: false }

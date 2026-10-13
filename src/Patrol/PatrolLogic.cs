@@ -12,9 +12,6 @@ namespace Greenline
         // The plant actions of the furniture menu of a pot.
         public const int Plant = 1610, Pest = 1613, Weed = 1614, Water = 1615, CleanUp = 1616, Harvest = 1617, Till = 1618;
 
-        // The bits of PlantComponent.AnomalyFlags that give a chore.
-        private const int PestBit = 1, WeedBit = 2, DroughtBit = 4;
-
         // The one chore of a pot by its state, or 0: Remove Pests before Remove Weeds before Water for a
         // growing crop, Harvest for a mature crop, Clean Up for a withered crop, Till for a Poor pot. A chore
         // that the menu of the pot does not offer gives 0.
@@ -24,7 +21,7 @@ namespace Greenline
             switch (state)
             {
                 case GridLogic.PotState.Growing:
-                    action = (flags & PestBit) != 0 ? Pest : (flags & WeedBit) != 0 ? Weed : (flags & DroughtBit) != 0 ? Water : 0;
+                    action = (flags & GridLogic.Pest) != 0 ? Pest : (flags & GridLogic.Weed) != 0 ? Weed : (flags & GridLogic.Drought) != 0 ? Water : 0;
                     break;
                 case GridLogic.PotState.Mature: action = Harvest; break;
                 case GridLogic.PotState.Withered: action = CleanUp; break;

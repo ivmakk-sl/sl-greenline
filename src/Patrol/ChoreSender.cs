@@ -13,6 +13,10 @@ namespace Greenline
     {
         internal static bool Broken { get; private set; }
 
+        // The targetFloorId of the request: BattleLogicWorld.OnCrossFloorMainActionsRequest does not read it
+        // (decompiled, game 1.1.18385), and the walk finds the floor of the pot from its id.
+        private const int UnusedFloor = 0;
+
         // Sends one chore. False when the send failed.
         internal static bool Send(long potId, int furnitureActionId, int plantActionId)
         {
@@ -23,7 +27,7 @@ namespace Greenline
                     ? new Il2CppStructArray<int>(new[] { furnitureActionId, plantActionId })
                     : new Il2CppStructArray<int>(new[] { plantActionId });
                 EventDispatcherTools.NotifyGlobal<int, Il2CppStructArray<int>, long, Vector3, Quaternion>(
-                    EnumNotify_MapJump.CrossFloorMainActionsRequest, 0, ids, potId, Vector3.zero, Quaternion.identity);
+                    EnumNotify_MapJump.CrossFloorMainActionsRequest, UnusedFloor, ids, potId, Vector3.zero, Quaternion.identity);
                 if (Plugin.Verbose.Value)
                     Plugin.Log.LogDebug($"Greenline Patrol: sent pot {potId} actions {furnitureActionId},{plantActionId}");
                 return true;

@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using BepInEx.Unity.IL2CPP.Hook;
 using HarmonyLib;
 using Il2CppInterop.Common;
+using Il2CppInterop.Runtime;
 using GameCore.HotUpdate;
 using GameCore.HotUpdate.Battle.Logic;
 using DynamicNpc = GameCore.HotUpdate.Battle.Logic.DynamicNpc;
@@ -91,7 +92,7 @@ namespace Greenline
             if (seedItemId != RobotLogic.Placeholder || __instance == null || robotId != __instance.InstanceId) return true;
             try
             {
-                if (!RobotSow.On() || tier < 0 || tier > 2) return true;
+                if (!RobotSow.On() || tier < 0 || tier >= RobotLogic.SowTiers) return true;
                 var robot = __instance.GetAgentComponent<RobotComponent>();
                 var ids = robot?._sowPresetSeedIds;
                 if (ids == null || ids.Length <= tier) return true;
@@ -126,7 +127,7 @@ namespace Greenline
                 string name = ModTexts.Current()["sameAsLastCrop"];
                 var candidates = data.SowCandidates;
                 var presets = data.SowPresets;
-                for (int tier = 0; tier < 3; tier++)
+                for (int tier = 0; tier < RobotLogic.SowTiers; tier++)
                 {
                     if (candidates != null)
                     {
@@ -202,8 +203,14 @@ namespace Greenline
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate int ResolveSowPlanFn(IntPtr self, IntPtr furniture, IntPtr ctx, IntPtr candidate, IntPtr methodInfo);
 
-        // The places of RobotContext.SowSeedSmall, SowSeedMedium, and SowSeedLarge (game/api RobotContext).
-        private static readonly int[] SeedOffsets = { 0x40, 0x44, 0x48 };
+        // The fields of the seed of each pot size in RobotContext, small to large.
+        private static readonly string[] SeedFields = { "SowSeedSmall", "SowSeedMedium", "SowSeedLarge" };
+        // il2cpp_type_get_type of an int field (IL2CPP_TYPE_I4).
+        private const int Il2CppTypeI4 = 0x08;
+
+        // The places of the seed fields in the unboxed RobotContext, read from the il2cpp metadata at Apply, so a
+        // game update that moves a field moves the place too (game 1.1.18385: 0x40, 0x44, 0x48).
+        private static int[] SeedOffsets;
 
         // Static, so the garbage collector keeps the delegates while the detour runs.
         private static ResolveSowPlanFn hook;
@@ -220,8 +227,32 @@ namespace Greenline
             // The first field of an il2cpp MethodInfo is the address of the native code.
             var code = Marshal.ReadIntPtr(methodInfo);
             if (code == IntPtr.Zero) throw new MissingMethodException("PlantChoreManager", "ResolveSowPlan (no code)");
+            SeedOffsets = ReadSeedOffsets();
+            if (Plugin.Verbose.Value)
+                Plugin.Log.LogDebug($"Greenline robot: RobotContext seed fields at 0x{SeedOffsets[0]:X}, 0x{SeedOffsets[1]:X}, 0x{SeedOffsets[2]:X}");
             hook = Hook;
             detour = INativeDetour.CreateAndApply(code, hook, out original);
+        }
+
+        // A field that is missing or no longer an int throws, so the patch group of the robot stays off. The
+        // offset of a value type field counts the object header, which the unboxed struct of the hook does not have.
+        private static int[] ReadSeedOffsets()
+        {
+            var klass = Il2CppClassPointerStore<RobotContext>.NativeClassPtr;
+            if (klass == IntPtr.Zero) throw new MissingFieldException("RobotContext", "(no class)");
+            if (!IL2CPP.il2cpp_class_is_valuetype(klass)) throw new MissingFieldException("RobotContext", "(not a struct)");
+            int header = 2 * IntPtr.Size;
+            var offsets = new int[SeedFields.Length];
+            for (int i = 0; i < SeedFields.Length; i++)
+            {
+                var field = IL2CPP.il2cpp_class_get_field_from_name(klass, SeedFields[i]);
+                if (field == IntPtr.Zero) throw new MissingFieldException("RobotContext", SeedFields[i]);
+                if (IL2CPP.il2cpp_type_get_type(IL2CPP.il2cpp_field_get_type(field)) != Il2CppTypeI4)
+                    throw new MissingFieldException("RobotContext", SeedFields[i] + " (not an int)");
+                offsets[i] = (int)IL2CPP.il2cpp_field_get_offset(field) - header;
+                if (offsets[i] < 0) throw new MissingFieldException("RobotContext", SeedFields[i] + " (bad offset)");
+            }
+            return offsets;
         }
 
         internal static void Undo()
@@ -238,12 +269,12 @@ namespace Greenline
                 if (ctx != IntPtr.Zero && furniture != IntPtr.Zero && RobotSow.On())
                 {
                     long potId = 0;
-                    for (int tier = 0; tier < 3; tier++)
+                    for (int tier = 0; tier < RobotLogic.SowTiers; tier++)
                     {
                         int preset = Marshal.ReadInt32(ctx, SeedOffsets[tier]);
                         if (preset != RobotLogic.Placeholder) continue;
                         if (potId == 0) potId = new Furniture(furniture).InstanceId;
-                        saved ??= new int[3];
+                        saved ??= new int[RobotLogic.SowTiers];
                         saved[tier] = preset;
                         Marshal.WriteInt32(ctx, SeedOffsets[tier], RobotSow.Resolve(preset, tier, potId));
                     }
@@ -253,7 +284,7 @@ namespace Greenline
             try { return original(self, furniture, ctx, candidate, methodInfo); }
             finally
             {
-                for (int tier = 0; saved != null && tier < 3; tier++)
+                for (int tier = 0; saved != null && tier < RobotLogic.SowTiers; tier++)
                     if (saved[tier] != 0) Marshal.WriteInt32(ctx, SeedOffsets[tier], saved[tier]);
             }
         }

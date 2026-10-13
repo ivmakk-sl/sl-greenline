@@ -112,16 +112,19 @@ export function barTime(seconds: number, lang: string): string {
   return lang === 'zh' ? days + '天' + hours + '小时' : days + ' d ' + hours + ' h';
 }
 
+// The status of a game row of the plant list (PlantRow.status in CoreUI1).
+export const ROW_STATUS = { growing: 0, mature: 1, pest: 3, frost: 4 } as const;
+
 // The game statuses of a row that the game counts down (plantHasCountdown of CoreUI1): growing,
 // mature, Pest, and Frost. Weed, Drought, and Low Light stop the growth.
 export function hasCountdown(status: number): boolean {
-  return status === 0 || status === 1 || status === 3 || status === 4;
+  return status === ROW_STATUS.growing || status === ROW_STATUS.mature || status === ROW_STATUS.pest || status === ROW_STATUS.frost;
 }
 
 // A mature crop with no harvest window (a research crop, harvestTotalSeconds 0): the game shows only
 // the Harvest word, with no time.
 export function noHarvestWindow(row: PlantRow): boolean {
-  return row.status === 1 && !(row.harvestTotalSeconds > 0);
+  return row.status === ROW_STATUS.mature && !(row.harvestTotalSeconds > 0);
 }
 
 export function rowsById(state: CoreState | undefined): Record<string, PlantRow> {

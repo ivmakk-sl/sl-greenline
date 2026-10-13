@@ -11,6 +11,9 @@ namespace Greenline
         // that pot size.
         public const int Placeholder = 990001;
 
+        // The pot sizes of the sowing presets (RobotComponent._sowPresetSeedIds): tier 0 small, 1 medium, 2 large.
+        public const int SowTiers = 3;
+
         // The seed that the robot plants in a pot: for the placeholder, the seed of the pot's crop when it
         // is mature (a harvest and sow plans before the harvest), else the seed of its last crop, else 0 (the
         // robot skips the pot); 0 too for a pot with its own Auto-replant off. Any other preset stays.

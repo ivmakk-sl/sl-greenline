@@ -13,7 +13,6 @@ namespace Greenline
     // The replant pots of the current Patrol request and the last crop of each pot.
     internal static class Replant
     {
-        internal const int PlantActionId = 1610;
         private const float CheckSeconds = 1f;
 
         private static readonly HashSet<long> pots = new HashSet<long>();
@@ -101,7 +100,7 @@ namespace Greenline
                 long agentId = world._AgentManager.GetLeadingRoleId();
                 var gone = new List<long>();
                 foreach (long potId in pots)
-                    if (!world._ActionManager.HasActionInQueue(agentId, PlantActionId, potId)) gone.Add(potId);
+                    if (!world._ActionManager.HasActionInQueue(agentId, PatrolLogic.Plant, potId)) gone.Add(potId);
                 foreach (long potId in gone)
                 {
                     pots.Remove(potId);

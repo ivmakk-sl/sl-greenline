@@ -19,7 +19,7 @@ namespace Greenline
         {
             if (!Plugin.EnablePatrol.Value || ChoreSender.Broken) return false;
             var proficiency = BaseSingleton<BattleLogicWorld>.Instance?._ProficiencyManager;
-            return proficiency != null && proficiency.GetLevel(ProficiencyType.Plant) > 2;
+            return proficiency != null && proficiency.GetLevel(ProficiencyType.Plant) >= GameKey.PlantChoreBatchUnlockLevel;
         }
 
         // The count of chores that Patrol finds now, with no Stamina cut: the count of the Tend All button. `home` is
