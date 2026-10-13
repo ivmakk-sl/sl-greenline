@@ -87,6 +87,8 @@ If a game update removes a required part of the plant list or crop windows, Gree
 
 Check `BepInEx\LogOutput.log` for the `Greenline loaded.` line. Check for warnings or errors from Greenline.
 
+For more detail in the log, close the game, set `Verbose = true` in Greenline's config file, and add `Debug` to `LogLevels` under `[Logging.Disk]` in `BepInEx\config\BepInEx.cfg`.
+
 ## Build
 
 Greenline is a BepInEx 6 IL2CPP plugin. Building requires the .NET 8 SDK, Node 22, and a game installation with BepInEx. Start the game once after installing BepInEx to generate the IL2CPP interop assemblies. These assemblies come from the game and are not included in this repository. The page scripts use TypeScript in `src/Web/page/` (the grid and the pot card) and `src/Web/plantpanel/` (the pot options of the planting windows). Vite builds each into one file, which the DLL embeds. For [mise](https://mise.jdx.dev) users, `mise.toml` specifies Node 22.
