@@ -9,7 +9,7 @@ using GameCore.HotUpdate.Battle.Logic;
 
 namespace Greenline
 {
-    [BepInPlugin(PluginGuid, "Greenline", "1.1.0")]
+    [BepInPlugin(PluginGuid, "Greenline", "1.2.0")]
     [BepInProcess("SurvivalLog.exe")]
     public sealed class Plugin : BasePlugin
     {

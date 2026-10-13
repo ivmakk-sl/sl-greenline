@@ -1,4 +1,4 @@
-Unreleased
+v1.2.0 - 2026-10-13
 Added: Tend All walks the shortest route around walls and furniture: the floor you are on first, then the other floors.
 Added: The planting window shows the pot's last crop next to its title, and in red why Auto-replant stopped, for example seeds 0/1.
 Added: Same as last crop in the Sowing Presets of the Farming GR-3: the robot replants each pot with its last crop.

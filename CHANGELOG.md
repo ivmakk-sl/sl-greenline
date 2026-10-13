@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-13
+
 ### Added
 
 - Greenline's own Tend All: the mod finds the chore of each pot (Remove Pests before Remove Weeds before Water for a growing crop, Harvest, Clean Up, Till; a Harvest with its Till and Plant chore while Auto-replant is on) within the Stamina of the character, from planting level 3, and queues each chore as a click in the menu of the pot does. A pot that already has a chore in the queue gets no second one.
