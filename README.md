@@ -2,13 +2,13 @@
 
 Greenline is a mod for the Steam game *Survival Log*. It replaces the HUD plant list with a pot grid and adds Tend All: one click queues the chores of all pots.
 
-Tend All queues pot chores within the character's available Stamina, in the order of the shortest walk. With Auto-replant and Auto-fertilize enabled, it also plants the same crop again with fertilizer. A Farming GR-3 robot can also replant the same crop, and it replants a harvested pot before its next harvest.
+Tend All queues pot chores within the character's available Stamina, in the order of the shortest walk. With Auto-replant and Auto-fertilize enabled, it also plants the same crop again with fertilizer. A Farming GR-3 robot can also replant the same crop, and it replants a harvested pot before its next harvest. Stamina, seed, and fertilizer costs stay the same as by hand. The features unlock as your planting level grows, at the levels the game uses for its own farming tools.
 
 Nexus page: https://www.nexusmods.com/survivallog/mods/17
 
 ## The pot grid
 
-The expanded plant list groups pots by floor. Each floor starts with its name and has one cell for each pot, including empty pots. A pot keeps its cell while it stays placed. Each row holds up to 6 cells. Additional cells continue on the next row.
+The expanded plant list groups pots by floor. Each floor starts with its name and has one cell for each pot, including empty pots. A pot keeps its cell while it stays placed. Each row holds up to 6 cells. Additional cells continue on the next row. The grid shows from planting level 2.
 
 - Each cell shows the crop icon, or the pot icon if the pot is empty. A pot that needs the Till chore also shows a Till mark.
 - A mature crop has a gold border.
