@@ -1,26 +1,57 @@
 /* The pot grid of the HUD plant list, the Tend All button, the Auto-replant line, and the hover card.
-   page.js writes this file (after tokens.css) into the CoreUI1 frame. */
+   page.js writes this file (after tokens.css and the CSS of the floor grid library) into the CoreUI1 frame. The
+   library makes the popover a grid (.gl-fg) and draws the floor lines and zone lines (.gl-fg-line). */
 
 .mature-popover.greenline-grid {
-  display: grid;
-  gap: 3px;
   max-width: none;
   align-items: start;
 }
 
-.mature-popover.greenline-grid .mature-item-row {
-  display: none;
+/* A line takes the font of the HUD. */
+.mature-popover.greenline-grid .gl-fg-line {
+  font-family: inherit;
 }
 
-.greenline-floor-label {
-  font-family: inherit;
-  font-size: 9px;
-  font-weight: bold;
-  color: rgb(from var(--gl-gold) r g b / 85%);
+/* The area light and the area temperature at the right end of a line: the icon of the HUD, then the value, in one
+   color for each value whatever the area. */
+.greenline-area-light,
+.greenline-area-temp {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-family: Consolas, monospace;
+  font-size: 8px;
+  line-height: 9px;
+  color: var(--gl-white);
   text-shadow: var(--gl-text-shadow);
-  letter-spacing: 0.3px;
-  padding: 3px 2px 1px;
-  white-space: nowrap;
+}
+
+/* The value text in the normal weight, not the bold of <b>. */
+.greenline-area-light b,
+.greenline-area-temp b {
+  font-weight: normal;
+}
+
+.greenline-area-light svg,
+.greenline-area-temp svg {
+  width: 8px;
+  height: 8px;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.greenline-area-light svg {
+  stroke: var(--gl-sun);
+}
+
+.greenline-area-temp svg {
+  stroke: var(--gl-thermo);
+}
+
+.mature-popover.greenline-grid .mature-item-row {
+  display: none;
 }
 
 /* The cell of a pot. */
@@ -181,15 +212,32 @@
   background: rgb(from var(--gl-gold) r g b / 32%);
 }
 
+/* The last line of the list: the Auto-replant checkbox at its left end (while Patrol is there), and the pin at its
+   right end. */
+.mature-popover.greenline-grid .greenline-last {
+  grid-row: var(--gl-fg-row);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  padding-top: 4px;
+  border-top: 1px solid rgb(from var(--gl-gold) r g b / 15%);
+}
+
+/* The pin is about the 11px of the checkbox (1.2em of 9px). */
+.greenline-last-end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  font-size: 9px;
+}
+
 /* The font of the game's header checkbox, and a box in the amber of the Tend All button. */
 .greenline-replant {
   position: relative;
   display: flex;
   align-items: center;
   gap: 5px;
-  margin-top: 3px;
-  padding-top: 4px;
-  border-top: 1px solid rgb(from var(--gl-gold) r g b / 15%);
   cursor: pointer;
   user-select: none;
   font-family: "Microsoft YaHei", sans-serif;

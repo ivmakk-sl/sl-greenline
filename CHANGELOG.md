@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- The light and the temperature of each area at the right end of each floor line and zone line of the pot grid, with the sun and the thermometer of the HUD: the values of the game HUD for the area (the weather light times the light of the area; the temperature of the area with its powered heaters and cooking, less the cold of the weather), as the HUD writes them (`0.5`, `+1`, `-3`). They follow the weather within about a second. A lamp or a heat source of one pot is not in them, and they have no color of their own: the pot keeps the game's problem badge.
+- The pin of the plant list at the right end of its last line, as in Trapline: a pinned list stays open when you open the trap list or the search, or press Escape, and opens again when the game shows the list again. The arrow of the list header unpins and closes it. The config entry `PinGrid` (default off) keeps it.
+
+### Changed
+
+- The pot grid groups the pots of each floor by area (the game's climate areas Interior, Sunroom, Terrace, Cold Storage, and Basement): a floor line with the floor name, the pots of the first area of the floor right under it, and a zone line with the game's area name for each other area. The cells start at the left edge, up to 7 in a row (6 before), so the list is about as wide as Trapline's trap list; the floor name column is gone. The lines use the compact look of Trapline (the shared library floor-grid 2.0.0).
+- The last line of the open plant list shows always: the Auto-replant checkbox at its left end while Tend All is on, and the pin at its right end.
+
+### Fixed
+
+- Stability: no call of Greenline to the web UI asks for a result any more. A result callback is a known cause of a crash of the game's web UI browser; the page now tells Greenline by a page message when it has no page script, lost the grid, or misses a part.
+
 ## [1.2.0] - 2026-10-13
 
 ### Added

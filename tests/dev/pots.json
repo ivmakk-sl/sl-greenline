@@ -3,11 +3,32 @@
   "patrol": true,
   "pendingChores": 4,
   "replantOn": true,
+  "pin": false,
   "words": {},
-  "floors": [
-    { "id": 102, "label": "2nd Floor", "cells": [2001, 2002, 2003] },
-    { "id": 1, "label": "Home", "cells": [2004, 2005, 2006, 2007, 2008] }
-  ],
+  "grid": {
+    "cols": 5,
+    "rows": 6,
+    "lines": [
+      { "key": "f102", "kind": "floor", "row": 1, "name": "2nd Floor", "area": 2 },
+      { "key": "z102:3", "kind": "zone", "row": 3, "name": "Terrace", "area": 3 },
+      { "key": "f1", "kind": "floor", "row": 5, "name": "Home", "area": 1 }
+    ],
+    "cells": [
+      { "pot": 2001, "row": 2, "col": 1 },
+      { "pot": 2002, "row": 2, "col": 2 },
+      { "pot": 2003, "row": 4, "col": 1 },
+      { "pot": 2004, "row": 6, "col": 1 },
+      { "pot": 2005, "row": 6, "col": 2 },
+      { "pot": 2006, "row": 6, "col": 3 },
+      { "pot": 2007, "row": 6, "col": 4 },
+      { "pot": 2008, "row": 6, "col": 5 }
+    ]
+  },
+  "areas": {
+    "1": { "name": "Interior", "light": "1", "temp": "+1" },
+    "2": { "name": "Sunroom", "light": "2", "temp": "+1" },
+    "3": { "name": "Terrace", "light": "2", "temp": "0" }
+  },
   "pots": {
     "2001": {
       "rowId": 6001, "clickId": 6001, "potName": "Plant Grow Box (Large)", "potIcon": "../../Res/Furniture/UI_Item_Icon_plantcommon_large.png", "potSize": 4,

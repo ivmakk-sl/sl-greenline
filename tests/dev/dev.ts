@@ -8,8 +8,8 @@ import plantCss from '../../src/Web/plantpanel.css?inline';
 import type { PotsData } from '../../src/Web/page/types';
 import pots from './pots.json';
 
-// PageScript.WithCss and PageStyle.OpacityRule with the config defaults (0.9 and 0.96).
-window.__greenlineCss = tokensCss + '\n' + pageCss + '\n' + ':root{--gl-panel-opacity:90%;--gl-card-opacity:96%}';
+// PageScript.WithCssParts and PageStyle.OpacityRule with the config defaults (0.9 and 0.96).
+window.__greenlineCss = { tokens: tokensCss, page: pageCss + '\n' + ':root{--gl-panel-opacity:90%;--gl-card-opacity:96%}' };
 window.__greenlinePlantCss = tokensCss + '\n' + plantCss;
 // A page can be ready before the scripts load, so its start waits for them.
 const scripts = Promise.all([import('../../src/Web/page/main'), import('../../src/Web/plantpanel/main')]);
@@ -33,7 +33,16 @@ function startCore(core: Frame): void {
   setTimeout(() => {
     core.eval('state.maturePlantsExpanded = true');
     setTimeout(() => {
-      const result = window.__greenline!.setPots(pots as PotsData);
+      // ?cold shows the area values of a Severe Cold day (row B of the design board), else those of a clear day.
+      const data = pots as PotsData;
+      if (/[?&]cold\b/.test(window.location.search)) {
+        data.areas = {
+          1: { name: 'Interior', light: '0.5', temp: '-2' },
+          2: { name: 'Sunroom', light: '1', temp: '-2' },
+          3: { name: 'Terrace', light: '1', temp: '-3' },
+        };
+      }
+      const result = window.__greenline!.setPots(data);
       console.log('Greenline setPots:', result, window.__greenline!.check());
     }, 100);
   }, 100);

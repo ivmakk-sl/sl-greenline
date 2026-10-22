@@ -1,5 +1,5 @@
 // The frame observer and the install pass with its retry.
-import { PAGES, lineTitle, missingParts, store, windowDocs } from './core';
+import { PAGES, lineTitle, missingParts, postMod, store, windowDocs } from './core';
 import { apply } from './options';
 import type { PageName } from './types';
 
@@ -15,7 +15,15 @@ function watch(name: PageName, doc: Document): void {
   doc.__greenlineObserver.observe(doc.body, { childList: true, subtree: true });
 }
 
+// One install pass, also each retry. A result with a problem (a missing part, an error) goes to C# as the page
+// message "plant panel <result>"; "installed" and "no frame" (the frame is not loaded yet) post nothing.
 export function attempt(retries: number): string {
+  const result = run(retries);
+  if (result !== 'installed' && result !== 'no frame') postMod('plant panel ' + result);
+  return result;
+}
+
+function run(retries: number): string {
   try {
     const docs = windowDocs();
     if (!docs.length) {

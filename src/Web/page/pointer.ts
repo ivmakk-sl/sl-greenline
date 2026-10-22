@@ -1,7 +1,7 @@
 // The pot card, pinned next to its anchor: beside a grid cell under the pointer, or above the pot under the
 // pointer in the game world.
 import { cardModel, setCard } from './card';
-import { findFrame, frameState, rowsById, setStyle, store, toggleClass } from './core';
+import { findFrame, frameState, postMod, rowsById, setStyle, store, toggleClass } from './core';
 import type { CoreState, CoreWindow } from './types';
 
 interface Anchor {
@@ -149,8 +149,7 @@ export function setHover(potId: number, x?: number, y?: number, keepCell?: boole
     return 'ok';
   } catch (e) {
     const text = e && (e as Error).message ? (e as Error).message : String(e);
-    const vuplex = (window as Window & { vuplex?: { postMessage(m: string): void } }).vuplex;
-    try { if (vuplex) vuplex.postMessage('slmod|greenline|hover error: ' + text); } catch (err) { /* the result still names the error */ }
+    postMod('hover error: ' + text);
     return 'error: ' + text;
   }
 }

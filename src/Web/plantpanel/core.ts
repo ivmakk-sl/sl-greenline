@@ -39,6 +39,13 @@ export const store: { current: PlantState } = {
   current: { pot: '', replant: true, fert: false, lastCrop: null, words: {} }
 };
 
+// A page message to C# (PageMessages): window.vuplex.postMessage of the web view, in the root page. The mod asks the
+// web UI for no result, so a page message is the one way back.
+export function postMod(text: string): void {
+  const vuplex = (window as Window & { vuplex?: { postMessage(m: string): void } }).vuplex;
+  try { if (vuplex) vuplex.postMessage('slmod|greenline|' + text); } catch (e) { /* no channel: nothing to tell */ }
+}
+
 // The mod text of a name that C# sent with setState, or the name. C# calls setState before each install, so
 // the page has no word of its own.
 export function word(key: string): string {

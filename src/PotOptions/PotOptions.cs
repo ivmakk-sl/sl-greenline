@@ -22,9 +22,10 @@ namespace Greenline
     }
 
     // The messages of the page scripts: a click on a pot option checkbox (GREENLINE_POT_OPTION), on Tend
-    // All (GREENLINE_TEND), and on the Auto-replant checkbox (GREENLINE_REPLANT). The message layout is the
-    // one that Trapline reads: four fields joined by U+001E, [2] the type and [3] the JSON data. Only the
-    // mod's own messages stop here; each other message goes on to the game.
+    // All (GREENLINE_TEND), on the Auto-replant checkbox (GREENLINE_REPLANT), and on the pin of the plant
+    // list (GREENLINE_PIN). The message layout is the one that Trapline reads: four fields joined by
+    // U+001E, [2] the type and [3] the JSON data. Only the mod's own messages stop here; each other
+    // message goes on to the game.
     [HarmonyPatch(typeof(WebUILayer), "OnMessageFromJS")]
     internal static class GreenlineMessage
     {
@@ -49,6 +50,15 @@ namespace Greenline
                     case "GREENLINE_REPLANT":
                         var on = PageJson.ParseReplant(data);
                         if (on.HasValue) PotOptions.SetGlobalReplant(on.Value);
+                        return false;
+                    case "GREENLINE_PIN":
+                        var pin = PageJson.ParseReplant(data);
+                        if (pin.HasValue)
+                        {
+                            Plugin.PinGrid.Value = pin.Value;
+                            PotGrid.MarkDirty();
+                            if (Plugin.Verbose.Value) Plugin.Log.LogDebug("Greenline pin: " + (pin.Value ? "on" : "off"));
+                        }
                         return false;
                     default:
                         return true;

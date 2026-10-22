@@ -38,21 +38,27 @@ namespace Greenline
             return sb.ToString();
         }
 
-        // The result of SetPotsCommand when the root page has no page script: a new root page, or one
-        // that the game built again after a browser crash.
+        // The page message (slmod|greenline|no script) of a command that finds no page script in the root page: a new
+        // root page, or one that the game built again after a browser crash. PageMessages then asks for a full send.
         public const string NoScript = "no script";
+
+        // Each command is a statement, so it gives the web UI no value to send back: the mod asks for no result
+        // (a result callback can crash the web UI browser, vuplex.md), and the page answers by a page message.
+        private const string ElsePostNoScript = "else window.vuplex.postMessage('slmod|greenline|" + NoScript + "');";
 
         // The push of the pot data when the page script is already in the root page.
         public static string SetPotsCommand(string json) =>
-            "window.__greenline?window.__greenline.setPots(" + json + "):'" + NoScript + "'";
+            "if(window.__greenline)window.__greenline.setPots(" + json + ");" + ElsePostNoScript;
 
-        // The check, when the pot data did not change, that the root page still has the page script and
-        // the CoreUI1 frame still has the grid. Any result but "ok" makes the next check push again.
-        public const string CheckCommand = "window.__greenline?window.__greenline.check():'" + NoScript + "'";
+        // The check, when the pot data did not change, that the root page still has the page script and the CoreUI1
+        // frame still has the grid. check() posts only a result that is not ok; with Verbose it also posts its counts
+        // once each real minute.
+        public static string CheckCommand(bool verbose) =>
+            "if(window.__greenline)window.__greenline.check(" + (verbose ? "true" : "false") + ");" + ElsePostNoScript;
 
-        // The page script, then the push of the pot data: sent only when SetPotsCommand gave NoScript.
+        // The page script, then the push of the pot data: sent only after a page message NoScript.
         public static string SetPotsWithScriptCommand(string script, string json) =>
-            script + ";window.__greenline.setPots(" + json + ");";
+            script + ";window.__greenline.setPots(" + json + ");void 0;";
 
         private static readonly Regex PotPattern = new Regex("\"pot\"\\s*:\\s*\"(\\d+)\"");
         private static readonly Regex KeyPattern = new Regex("\"key\"\\s*:\\s*\"(replant|fert)\"");

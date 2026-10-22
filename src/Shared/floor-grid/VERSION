@@ -1,0 +1,6 @@
+# Library copy of shared/floor-grid. Do not edit it: edit shared/floor-grid/, then run tools/shared-sync.ps1 -Mod Greenline -Lib floor-grid.
+name=floor-grid
+version=2.0.0
+sha256 cs/FloorGridLayout.cs 54cdcf69a8bc32bc829e4f4d165b556386c13ba24e0c69a8b34d608d0c53a008
+sha256 web/floorGrid.css 71f60f4609e7c027f089a1a9bc7ad14c8c472d311fba1eafd2ca9c30443a5394
+sha256 web/floorGrid.ts 0d6a98632ebb2ec7951f31cdfa65fe7e931c482408cf07a6f2fa13553e00bc08

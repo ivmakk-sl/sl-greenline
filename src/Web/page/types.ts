@@ -48,11 +48,36 @@ export interface Pot {
   autoReplant: boolean;
 }
 
-// One floor of the grid: its lines hold the cells (PotIds) in this order.
-export interface Floor {
-  id: number;
-  label: string;
-  cells: number[];
+// A floor line or a zone line of the grid: its key, its grid row, its name, and its climate area (for a floor line,
+// the main area of the floor).
+export interface GridLine {
+  key: string;
+  kind: 'floor' | 'zone';
+  row: number;
+  name: string;
+  area: number;
+}
+
+// The values of one climate area: its name, and the texts of the area light and the area temperature.
+export interface AreaValues {
+  name: string;
+  light: string;
+  temp: string;
+}
+
+// The grid place of one pot.
+export interface GridCell {
+  pot: number;
+  row: number;
+  col: number;
+}
+
+// The layout of GridLogic.Layout: the column and row counts, the lines, and the cells.
+export interface Grid {
+  cols: number;
+  rows: number;
+  lines: GridLine[];
+  cells: GridCell[];
 }
 
 // The pot data of setPots.
@@ -63,7 +88,11 @@ export interface PotsData {
   // Greenline's own Auto-replant option.
   replantOn: boolean;
   words: Record<string, string>;
-  floors: Floor[];
+  grid: Grid;
+  // The values of each climate area with a pot, by area id; none when the mod cannot read them.
+  areas: Record<string, AreaValues>;
+  // The pin of the plant list (the config PinGrid).
+  pin: boolean;
   pots: Record<string, Pot>;
 }
 
@@ -71,7 +100,7 @@ export interface GreenlineApi {
   install(): string;
   setPots(data: PotsData | null): string;
   setHover(potId: number, x?: number, y?: number, keepCell?: boolean): string;
-  check(): string;
+  check(verbose?: boolean): string;
   step(): void;
   word(key: string): string;
   shortTime(seconds: number, lang: string): string;
@@ -82,10 +111,12 @@ declare global {
   interface Window {
     // The interface of the page script in the root page.
     __greenline?: GreenlineApi;
-    // tokens.css and page.css, which C# sets in the root page before the script.
-    __greenlineCss?: string;
+    // tokens.css and page.css apart, which C# sets in the root page before the script.
+    __greenlineCss?: { tokens: string; page: string };
     // The body observer of the page script in the CoreUI1 frame.
     __greenlineObserver?: MutationObserver;
+    // Set in the CoreUI1 frame once the chevron of the plant list is watched for the pin.
+    __greenlineChevron?: boolean;
     // Set in the CoreUI1 frame once the step runs and once the pointer is watched.
     __greenlineTick?: boolean;
     __greenlinePointer?: boolean;
