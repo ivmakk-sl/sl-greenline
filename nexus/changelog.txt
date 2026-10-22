@@ -1,3 +1,9 @@
+v1.3.0 - 2026-10-22
+Added: Each floor and area line of the pot grid shows the light and the temperature of that area, the same values as the HUD, so you see which pots a cold wave hits.
+Added: Pin the plant list to keep it open.
+Changed: The pot grid groups the pots of each floor by area (Interior, Sunroom, Terrace, Cold Storage, Basement), with a small name line for each floor and each extra area. The floor name column is gone, and a row holds up to 7 pots, so the list is about as wide as Trapline's trap list.
+Fixed: Better stability: Greenline no longer waits for answers from the game's web UI, a known cause of web UI crashes.
+
 v1.2.0 - 2026-10-13
 Added: Tend All walks the shortest route around walls and furniture: the floor you are on first, then the other floors.
 Added: The planting window shows the pot's last crop next to its title, and in red why Auto-replant stopped, for example seeds 0/1.

@@ -1,5 +1,5 @@
-// The Tend All button and the Auto-replant line of the list header.
-import { FEATURES, hasPatrol, panelShouldRender, partsMissing, place, store, toggleClass, word } from './core';
+// The Tend All button of the list header, and the last line of the list with the Auto-replant checkbox.
+import { FEATURES, hasPatrol, panelShouldRender, partsMissing, setStyle, store, toggleClass, word } from './core';
 import type { CoreState } from './types';
 
 // The Tend All button of the header, in the style of Trapline's Take All: shown only while Patrol is
@@ -38,11 +38,27 @@ export function applyTend(doc: Document, state: CoreState | undefined): string {
   return '';
 }
 
-// The Auto-replant line: the last grid line of the expanded list, with a checkbox for Greenline's own
-// Auto-replant option (replantOn of the pot data, kept in the save by the mod). A click posts
-// GREENLINE_REPLANT with the new value.
-export function applyReplant(doc: Document, popover: Element, line: number): void {
-  let el = popover.querySelector<HTMLElement>('.greenline-replant');
+// The free place at the right end of the last line, which the pin fills.
+export const LAST_END = 'greenline-last-end';
+
+// The last line of the expanded list, always under the grid at the given row: the Auto-replant checkbox at its left
+// end while Patrol is there, and a free place at its right end for the pin. The checkbox shows Greenline's own
+// Auto-replant option (replantOn of the pot data, kept in the save by the mod); a click posts GREENLINE_REPLANT with
+// the new value.
+export function applyLast(doc: Document, popover: HTMLElement, row: number): void {
+  let last = popover.querySelector<HTMLElement>(':scope > .greenline-last');
+  if (!last) {
+    last = doc.createElement('div');
+    last.className = 'greenline-last';
+    const end = doc.createElement('div');
+    end.className = LAST_END;
+    last.appendChild(end);
+    popover.appendChild(last);
+  }
+  setStyle(last, '--gl-fg-row', String(row));
+  setStyle(last, 'grid-column', '1 / -1');
+
+  let el = last.querySelector<HTMLElement>(':scope > .greenline-replant');
   if (!hasPatrol()) {
     if (el) el.remove();
     return;
@@ -64,9 +80,8 @@ export function applyReplant(doc: Document, popover: Element, line: number): voi
     const tip = doc.createElement('div');
     tip.className = 'entry-tip greenline-tip';
     el.appendChild(tip);
-    popover.appendChild(el);
+    last.insertBefore(el, last.firstChild);
   }
-  place(el, String(line), '1 / -1');
   const label = el.querySelector('.greenline-replant-text')!;
   if (label.textContent !== word('autoReplant')) label.textContent = word('autoReplant');
   const tipEl = el.querySelector('.entry-tip')!;

@@ -9,7 +9,7 @@ using GameCore.HotUpdate.Battle.Logic;
 
 namespace Greenline
 {
-    [BepInPlugin(PluginGuid, "Greenline", "1.2.0")]
+    [BepInPlugin(PluginGuid, "Greenline", "1.3.0")]
     [BepInProcess("SurvivalLog.exe")]
     public sealed class Plugin : BasePlugin
     {
@@ -21,6 +21,7 @@ namespace Greenline
         internal static ConfigEntry<bool> EnablePatrol;
         internal static ConfigEntry<bool> WorldHoverCard;
         internal static ConfigEntry<bool> EnableRobotReplant;
+        internal static ConfigEntry<bool> PinGrid;
         internal static ConfigEntry<float> PanelOpacity;
         internal static ConfigEntry<float> CardOpacity;
 
@@ -39,6 +40,9 @@ namespace Greenline
             EnableRobotReplant = Config.Bind(
                 "General", "EnableRobotReplant", true,
                 "The Farming GR-3: Same as last crop in its Sowing Presets, and it tills and plants each empty pot before its next harvest, also after it stops to charge (only Remove Pests comes first). Set to false for the robot as in the game without Greenline: a robot set to Same as last crop then plants nothing in that pot size until you pick a seed. Restart the game after a change.");
+            PinGrid = Config.Bind(
+                "General", "PinGrid", false,
+                "Keeps the HUD plant list open (the pin at the right end of the last line of the list sets this).");
             PanelOpacity = Config.Bind(
                 "General", "PanelOpacity", 0.9f,
                 new ConfigDescription(

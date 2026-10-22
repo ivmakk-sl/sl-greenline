@@ -8,7 +8,11 @@ Nexus page: https://www.nexusmods.com/survivallog/mods/17
 
 ## The pot grid
 
-The expanded plant list groups pots by floor. Each floor starts with its name and has one cell for each pot, including empty pots. A pot keeps its cell while it stays placed. Each row holds up to 6 cells. Additional cells continue on the next row. The grid shows from planting level 2.
+The expanded plant list groups pots by floor and by area. Each floor starts with a line with its name. When a floor has pots in more than one area (Interior, Sunroom, Terrace, Cold Storage, or Basement), each area after the first one gets its own line with the area name, as the HUD names it. The pots of the first area sit right under the floor line, in this order: Interior, Sunroom, Terrace, Cold Storage, Basement. Each area has one cell for each pot, including empty pots. A pot keeps its cell while it stays placed. Each row holds up to 7 cells. Additional cells continue on the next row. The grid shows from planting level 2.
+
+At the right end of each line, a sun shows the light of that area and a thermometer its temperature: the same values that the HUD shows when you stand in that area. Light shows as `0`, `0.5`, `1`, or `2`, and temperature with its sign, for example `+1` or `-3`. The values follow the weather and the heat in the area (a powered Air Conditioning, Electric Heater, or Heating Stove, and cooking), so you can see which area a cold wave or a dark day hits. A floor line shows the values of its first area. A lamp or a heat source on one pot does not change the line: the pot's own problem badge still shows a problem such as Frost or Low Light.
+
+The pin at the right end of the last line of the list keeps the list open: a pinned list stays open when you open the trap list or the search, or press Escape. Click the arrow of the list header to unpin and close it. The pin stays after a restart and for each save.
 
 - Each cell shows the crop icon, or the pot icon if the pot is empty. A pot that needs the Till chore also shows a Till mark.
 - A mature crop has a gold border.
@@ -34,7 +38,7 @@ To disable Tend All, set `EnablePatrol` to `false` in the config file. Restart t
 
 ## Replant and fertilize
 
-The **Auto-replant** checkbox under the grid controls replanting for all pots. It is enabled by default in each save. If you disable it, it stays disabled in that save. When enabled, Tend All tills harvested pots and plants the same crops again, subject to each pot's Auto-replant setting.
+The **Auto-replant** checkbox on the last line of the list, under the grid, controls replanting for all pots. It is enabled by default in each save. If you disable it, it stays disabled in that save. When enabled, Tend All tills harvested pots and plants the same crops again, subject to each pot's Auto-replant setting.
 
 Greenline replants without requiring you to use the planting window. It uses the game's planting action, normal Stamina cost, and seeds from the same containers as the planting window. Greenline counts the seeds when the planting starts, not when you click Tend All, so seeds from a harvest earlier in the same Tend All run count.
 

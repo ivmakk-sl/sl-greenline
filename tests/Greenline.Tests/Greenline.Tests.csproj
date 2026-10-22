@@ -10,13 +10,16 @@
 
   <ItemGroup>
     <Compile Include="..\..\src\Grid\GridLogic.cs" Link="GridLogic.cs" />
+    <Compile Include="..\..\src\Grid\AreaFormat.cs" Link="AreaFormat.cs" />
     <Compile Include="..\..\src\Hover\HoverLogic.cs" Link="HoverLogic.cs" />
     <Compile Include="..\..\src\Replant\ReplantLogic.cs" Link="ReplantLogic.cs" />
     <Compile Include="..\..\src\Patrol\PatrolLogic.cs" Link="PatrolLogic.cs" />
     <Compile Include="..\..\src\Shared\route\cs\*.cs" Link="Shared\route\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Shared\floor-grid\cs\*.cs" Link="Shared\floor-grid\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Robot\RobotLogic.cs" Link="RobotLogic.cs" />
     <Compile Include="..\..\src\PotOptions\SaveKeyLogic.cs" Link="SaveKeyLogic.cs" />
     <Compile Include="..\..\src\Web\PageJson.cs" Link="PageJson.cs" />
+    <Compile Include="..\..\src\Web\SendLogic.cs" Link="SendLogic.cs" />
     <Compile Include="..\..\src\Shared\json\cs\*.cs" Link="Shared\json\%(Filename)%(Extension)" />
     <Compile Include="..\..\src\Shared\i18n\cs\*.cs" Link="Shared\i18n\%(Filename)%(Extension)" />
     <EmbeddedResource Include="..\..\src\i18n\*.json" LogicalName="Greenline.i18n.%(Filename)%(Extension)" />

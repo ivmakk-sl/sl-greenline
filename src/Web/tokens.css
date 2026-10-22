@@ -12,6 +12,9 @@
   --gl-slot: #0a0f0c;
   --gl-chip: #e6e6e6;
   --gl-chip-text: #bbb;
+  /* The sun of the HUD's light line, and the thermometer of the planting window (text-blue-400). */
+  --gl-sun: #ffc107;
+  --gl-thermo: #60a5fa;
 
   /* The backgrounds of the game's plant list (.mature-popover) and tooltip (.entry-tip), with the default
      opacities of the config. C# puts a :root rule with the config values after the CSS files. */
@@ -28,4 +31,19 @@
   /* The icon slot of the planting window (.icon-wrapper): a dark square with an inner shadow. */
   --gl-slot-bg: rgb(from var(--gl-slot) r g b / 80%);
   --gl-slot-shadow: inset 0 2px 4px rgb(from var(--gl-black) r g b / 60%);
+
+  /* The pin of the plant list (the HUD pin library, prefix gl): white, so it draws less eye than the gold of the list. */
+  --gl-pin-color: var(--gl-white);
+
+  /* The floor lines and zone lines of the floor grid library (prefix gl), with no rule. */
+  --gl-fg-cell: 26px;
+  --gl-fg-gap: 3px;
+  --gl-fg-max-cols: 7;
+  --gl-fg-floor-color: rgb(from var(--gl-gold) r g b / 85%);
+  --gl-fg-zone-color: rgb(from var(--gl-white) r g b / 70%);
+  --gl-fg-floor-size: 7px;
+  --gl-fg-zone-size: 6.5px;
+  --gl-fg-shadow: var(--gl-text-shadow);
+  --gl-fg-rule: rgb(from var(--gl-white) r g b / 18%);
+  --gl-fg-rule-width: 1px;
 }

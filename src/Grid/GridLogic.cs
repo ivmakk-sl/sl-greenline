@@ -1,15 +1,19 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using SlShared.FloorGrid;
 using SlShared.Json;
 
 namespace Greenline
 {
-    // The game-free logic of the pot grid: the pot states, the badges, the floor layout, and the pot
+    // The game-free logic of the pot grid: the pot states, the badges, the layout by floor and climate area, and the pot
     // data that page.js reads. No game or BepInEx type here, so the tests can link this file.
     public static class GridLogic
     {
         public enum PotState { Empty, Growing, Mature, Withered, Poor }
+
+        // The most cells of one line of the grid (--gl-fg-max-cols of tokens.css).
+        public const int CellsPerLine = 7;
 
         // The bits of the game's PlantAnomaly flags. NeedFert is a research crop that did not get its
         // fertilizer round.
@@ -60,6 +64,8 @@ namespace Greenline
             // The id that a click sends to the game to go to the pot: the ShowInstanceId of the pot.
             public long ClickId;
             public int Floor;
+            // The climate area of the pot (an EnvArea id of the game), 0 when the mod cannot read it.
+            public int Area;
             public string PotName = "", PotIcon = "";
             public int PotSize;
             public PotState State;
@@ -78,24 +84,75 @@ namespace Greenline
             public bool AutoReplant = true;
         }
 
-        // One floor of the grid: the floor id, its name, and its pot ids in cell order.
-        public sealed class FloorLine
+        // A floor line (IsFloor) or a zone line of the grid: its key for the page, its grid row, its floor, its climate
+        // area (for a floor line, the main area of the floor), and its name, which PotGrid sets.
+        public sealed class Line
         {
+            public string Key = "";
+            public bool IsFloor;
             public int Floor;
-            public string Label = "";
-            public List<long> Pots = new List<long>();
+            public int Area;
+            public int Row;
+            public string Name = "";
         }
 
-        // The floors in the floor-button order of the game, then the floors that the buttons do not
-        // name, by id. Inside a floor, the pots by id: the id is fixed while the pot stays placed, so a
-        // pot keeps its cell when its state changes.
-        public static List<FloorLine> LayoutFloors(IEnumerable<Pot> pots, IList<int> floorOrder)
+        // The values of one climate area for the lines of the grid: its name and the texts of AreaFormat.
+        public sealed class AreaValues
         {
-            return pots.GroupBy(p => p.Floor)
-                .OrderBy(g => floorOrder.Contains(g.Key) ? floorOrder.IndexOf(g.Key) : int.MaxValue)
-                .ThenBy(g => g.Key)
-                .Select(g => new FloorLine { Floor = g.Key, Pots = g.Select(p => p.PotId).OrderBy(id => id).ToList() })
-                .ToList();
+            public string Name = "";
+            public string Light = "";
+            public string Temp = "";
+        }
+
+        // The grid place of one pot: the row and the column, each from 1.
+        public sealed class Cell
+        {
+            public long PotId;
+            public int Row;
+            public int Column;
+        }
+
+        // The lines in row order, the cells in row and column order, the row count, and the column count.
+        public sealed class Grid
+        {
+            public List<Line> Lines = new List<Line>();
+            public List<Cell> Cells = new List<Cell>();
+            public int Rows;
+            public int Columns = 1;
+        }
+
+        // The layout of the pots by floor and by climate area. The floors follow the floor-button order of the game,
+        // then the floors that the buttons do not name, by id. The main area of a floor (the lowest area id of its pots:
+        // Interior first) has no zone line, and each other area of the floor gets one. Inside an area, the pots by id:
+        // the id is fixed while the pot stays placed, so a pot keeps its cell when its state changes.
+        public static Grid Layout(IEnumerable<Pot> pots, IReadOnlyList<int> floorOrder)
+        {
+            var sorted = pots.OrderBy(p => p.PotId).ToList();
+            var cells = new List<GridCell>();
+            var byKey = new Dictionary<string, long>();
+            for (int i = 0; i < sorted.Count; i++)
+            {
+                string key = sorted[i].PotId.ToString();
+                cells.Add(new GridCell { Key = key, Order = i, Floor = sorted[i].Floor, Zone = sorted[i].Area });
+                byKey[key] = sorted[i].PotId;
+            }
+            var main = FloorGridLayout.MainZones(cells);
+            var layout = FloorGridLayout.Layout(floorOrder, cells, (floor, zone) => main[floor] == zone, CellsPerLine);
+
+            var grid = new Grid { Rows = layout.Rows, Columns = layout.Columns };
+            foreach (var l in layout.Lines)
+                grid.Lines.Add(new Line
+                {
+                    Key = l.IsFloor ? "f" + l.Floor : "z" + l.Floor + ":" + l.Zone,
+                    IsFloor = l.IsFloor,
+                    Floor = l.Floor,
+                    Area = l.IsFloor ? main[l.Floor] : l.Zone,
+                    Row = l.Row,
+                });
+            foreach (var kv in layout.Cells)
+                grid.Cells.Add(new Cell { PotId = byKey[kv.Key], Row = kv.Value.Row, Column = kv.Value.Column });
+            grid.Cells.Sort((a, b) => a.Row != b.Row ? a.Row.CompareTo(b.Row) : a.Column.CompareTo(b.Column));
+            return grid;
         }
 
         // The problems that the hover card lists: the badge order with LightHigh after LightLow.
@@ -122,15 +179,18 @@ namespace Greenline
         // JSON library that the plugin can use (netstandard2.1 has no System.Text.Json), so the text is
         // built by hand.
         // `patrol` is whether the game's Patrol is available, and `pendingChores` the count of chores
-        // that wait, the same as the game's "Tend ×N" quick action.
-        public static string ToJson(string lang, IEnumerable<KeyValuePair<string, string>> words, IEnumerable<FloorLine> floors, IEnumerable<Pot> pots,
-            bool patrol, int pendingChores, bool replantOn)
+        // that wait, the same as the game's "Tend ×N" quick action. `areas` holds the values of each climate
+        // area with a pot, by area id (none when the mod cannot read them). `pin` is the pin of the plant list.
+        public static string ToJson(string lang, IEnumerable<KeyValuePair<string, string>> words, Grid grid, IEnumerable<Pot> pots,
+            bool patrol, int pendingChores, bool replantOn, IReadOnlyDictionary<int, AreaValues> areas = null,
+            bool pin = false)
         {
             var sb = new StringBuilder();
             sb.Append("{\"lang\":").Append(JsonText.Str(lang))
                 .Append(",\"patrol\":").Append(patrol ? "true" : "false")
                 .Append(",\"pendingChores\":").Append(pendingChores)
                 .Append(",\"replantOn\":").Append(replantOn ? "true" : "false")
+                .Append(",\"pin\":").Append(pin ? "true" : "false")
                 .Append(",\"words\":{");
             bool first = true;
             foreach (var w in words)
@@ -139,16 +199,38 @@ namespace Greenline
                 first = false;
                 sb.Append(JsonText.Str(w.Key)).Append(':').Append(JsonText.Str(w.Value));
             }
-            sb.Append("},\"floors\":[");
+            sb.Append("},\"grid\":{\"cols\":").Append(grid.Columns).Append(",\"rows\":").Append(grid.Rows).Append(",\"lines\":[");
             first = true;
-            foreach (var f in floors)
+            foreach (var l in grid.Lines)
             {
                 if (!first) sb.Append(',');
                 first = false;
-                sb.Append("{\"id\":").Append(f.Floor).Append(",\"label\":").Append(JsonText.Str(f.Label))
-                    .Append(",\"cells\":[").Append(string.Join(",", f.Pots)).Append("]}");
+                sb.Append("{\"key\":").Append(JsonText.Str(l.Key))
+                    .Append(",\"kind\":").Append(l.IsFloor ? "\"floor\"" : "\"zone\"")
+                    .Append(",\"row\":").Append(l.Row)
+                    .Append(",\"name\":").Append(JsonText.Str(l.Name))
+                    .Append(",\"area\":").Append(l.Area).Append('}');
             }
-            sb.Append("],\"pots\":{");
+            sb.Append("],\"cells\":[");
+            first = true;
+            foreach (var c in grid.Cells)
+            {
+                if (!first) sb.Append(',');
+                first = false;
+                sb.Append("{\"pot\":").Append(c.PotId).Append(",\"row\":").Append(c.Row).Append(",\"col\":").Append(c.Column).Append('}');
+            }
+            sb.Append("]},\"areas\":{");
+            first = true;
+            if (areas != null)
+                foreach (var kv in areas.OrderBy(kv => kv.Key))
+                {
+                    if (!first) sb.Append(',');
+                    first = false;
+                    sb.Append('"').Append(kv.Key).Append("\":{\"name\":").Append(JsonText.Str(kv.Value.Name))
+                        .Append(",\"light\":").Append(JsonText.Str(kv.Value.Light))
+                        .Append(",\"temp\":").Append(JsonText.Str(kv.Value.Temp)).Append('}');
+                }
+            sb.Append("},\"pots\":{");
             first = true;
             foreach (var p in pots.OrderBy(p => p.PotId))
             {

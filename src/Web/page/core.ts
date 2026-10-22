@@ -6,7 +6,8 @@ import { word as modWord } from '../../Shared/i18n/web/words';
 // update shows in the log and in the page tests.
 export const FEATURES = {
   grid: ['.mature-popover', '.mature-item-row'],
-  tend: ['.mature-panel', '.mature-toggle-row', '.mature-toggle-chevron']
+  tend: ['.mature-panel', '.mature-toggle-row', '.mature-toggle-chevron'],
+  pin: ['.mature-toggle-row', '.mature-toggle-chevron']
 };
 
 // The item icon of Basic Fertilizer: the game has no icon for Needs Fertilizer, so the badge and the
@@ -40,13 +41,15 @@ export function popoverShouldRender(state: CoreState | undefined): boolean {
 
 // Writes one inline style property only when its value differs: the body observer and the
 // panel's own observers see every write, even of an identical value.
-export function setStyle(el: HTMLElement, prop: string, value: string): void {
-  if (el.style.getPropertyValue(prop) !== value) el.style.setProperty(prop, value);
+// A page message to C# (PageMessages): window.vuplex.postMessage of the web view, in the root page. The mod asks the
+// web UI for no result, so a page message is the one way back.
+export function postMod(text: string): void {
+  const vuplex = (window as Window & { vuplex?: { postMessage(m: string): void } }).vuplex;
+  try { if (vuplex) vuplex.postMessage('slmod|greenline|' + text); } catch (e) { /* no channel: nothing to tell */ }
 }
 
-export function place(el: HTMLElement, row: string, column: string): void {
-  setStyle(el, 'grid-row', row);
-  setStyle(el, 'grid-column', column);
+export function setStyle(el: HTMLElement, prop: string, value: string): void {
+  if (el.style.getPropertyValue(prop) !== value) el.style.setProperty(prop, value);
 }
 
 export function hasPatrol(): boolean { return !!(store.data && store.data.patrol); }

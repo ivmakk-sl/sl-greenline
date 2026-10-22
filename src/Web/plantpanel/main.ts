@@ -7,7 +7,8 @@
 // time, and it retries every 300 ms for 3 seconds when the frame does not exist yet. A frame observer puts
 // the parts back when Vue renders them away.
 // install() returns "installed", "installed; missing: <page> <title>" (only the last-crop line is off),
-// "no frame", "missing: <page> <parts>", or "error: <text>".
+// "no frame", "missing: <page> <parts>", or "error: <text>", and posts each result with a problem to C# as a page
+// message (C# asks for no result).
 //
 // Vite builds this entry into one IIFE file (obj/page/plantpanel.js). C# sends it with each setState, and
 // a second run keeps the first interface and its state.

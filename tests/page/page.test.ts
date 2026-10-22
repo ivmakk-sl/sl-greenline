@@ -33,8 +33,14 @@ if (!gameFileExists) {
 } else {
   const pageSource = fs.readFileSync(PAGE_SOURCE_PATH, 'utf8');
   const pageJs = fs.readFileSync(PAGE_BUNDLE_PATH, 'utf8');
-  // The CSS that C# hands to page.js (PageScript.Css): the tokens, then the page rules.
-  const pageCss = ['tokens.css', 'page.css'].map((f: Any) => fs.readFileSync(path.join(SRC_DIR, f), 'utf8')).join('\n');
+  // The CSS that C# hands to page.js (PageScript.WithCssParts): the tokens and the page rules apart. The style node of
+  // the frame holds the tokens, the CSS of the floor grid library and of the HUD pin library with the prefix gl, then
+  // the page rules.
+  const tokensCss = fs.readFileSync(path.join(SRC_DIR, 'tokens.css'), 'utf8');
+  const pageRulesCss = fs.readFileSync(path.join(SRC_DIR, 'page.css'), 'utf8');
+  const floorGridCss = fs.readFileSync(path.join(SRC_DIR, '..', 'Shared', 'floor-grid', 'web', 'floorGrid.css'), 'utf8').replace(/PFX/g, 'gl');
+  const hudPinCss = fs.readFileSync(path.join(SRC_DIR, '..', 'Shared', 'hud-pin', 'web', 'hudPin.css'), 'utf8').replace(/PFX/g, 'gl');
+  const frameCss = tokensCss + '\n' + floorGridCss + '\n' + hudPinCss + '\n' + pageRulesCss;
   const coreUi1Html = fs.readFileSync(CORE_UI1_HTML, 'utf8');
 
   // The pot data with each English mod text, as C# sends it: the page has no word of its own. The fixture file is
@@ -91,12 +97,15 @@ if (!gameFileExists) {
     const originalQSA = root.document.querySelectorAll.bind(root.document);
     root.document.querySelectorAll = (selector: Any) =>
       selector === 'iframe' ? (frameBox.current ? [{ contentWindow: frameBox.current }] : []) : originalQSA(selector);
+    // The page messages to C# (window.vuplex.postMessage of the web view), without the prefix slmod|greenline|.
+    root.__mod = [];
+    root.vuplex = { postMessage: (m: Any) => root.__mod.push(String(m).replace(/^slmod\|greenline\|/, '')) };
     vm.createContext(root);
     return root;
   }
 
   function runPageJs(root?: Any, callExpr?: Any) {
-    const css = 'window.__greenlineCss=' + JSON.stringify(pageCss) + ';';
+    const css = 'window.__greenlineCss=' + JSON.stringify({ tokens: tokensCss, page: pageRulesCss }) + ';';
     return vm.runInContext(css + pageJs + ';' + callExpr, root, { filename: 'page.js' });
   }
 
@@ -153,8 +162,13 @@ if (!gameFileExists) {
     return doc.querySelector('.greenline-cell[data-pot-id="' + potId + '"]');
   }
 
-  function gridPlace(el?: Any) {
-    return [el.style.getPropertyValue('grid-row'), el.style.getPropertyValue('grid-column')];
+  // The grid place of a cell or a line as the floor grid library sets it.
+  function fgPlace(el?: Any) {
+    return [el.style.getPropertyValue('--gl-fg-row'), el.style.getPropertyValue('--gl-fg-col')];
+  }
+
+  function fgLines(doc?: Any) {
+    return [...doc.querySelectorAll('.mature-popover > .gl-fg-line')];
   }
 
   test('jsdom: pot data turns the popover into a grid and hides the game rows', async (t: Any) => {
@@ -173,7 +187,18 @@ if (!gameFileExists) {
 
     const styles = doc.querySelectorAll('#greenline-style');
     assert.equal(styles.length, 1);
-    assert.equal(styles[0].textContent, pageCss);
+    assert.equal(styles[0].textContent, frameCss);
+  });
+
+  test('jsdom: the library CSS is in the style node between the tokens and the page rules', async (t: Any) => {
+    const { doc } = await setup(t);
+
+    const text = doc.querySelector('#greenline-style').textContent;
+    const tokens = text.indexOf(':root');
+    const library = text.indexOf('.gl-fg {');
+    const page = text.indexOf('.mature-popover.greenline-grid');
+    assert.ok(tokens >= 0 && library > tokens && page > library, `order: tokens ${tokens}, library ${library}, page ${page}`);
+    assert.doesNotMatch(text, /PFX/);
   });
 
   // The selectors of each page.css rule whose value uses the token.
@@ -202,57 +227,149 @@ if (!gameFileExists) {
     assert.ok(doc.querySelector('.greenline-hover').matches(cardRule[1].replace('::before', '')));
   });
 
-  test('jsdom: each floor has a label in column 1 that spans its lines', async (t: Any) => {
+  test('jsdom: each floor has a floor line, and a second climate area of a floor a zone line, at the rows of the data', async (t: Any) => {
     const { doc } = await setup(t);
 
-    const upper = doc.querySelector('.greenline-floor-label[data-floor-id="102"]');
-    const home = doc.querySelector('.greenline-floor-label[data-floor-id="1"]');
-    assert.equal(upper.textContent, '2F');
-    assert.equal(home.textContent, 'Home');
-    assert.deepEqual(gridPlace(upper), ['1 / span 1', '1']);
-    assert.deepEqual(gridPlace(home), ['2 / span 1', '1']);
+    const lines = fgLines(doc);
+    assert.deepEqual(lines.map((l: Any) => [l.getAttribute('data-fg-key'), l.querySelector('.gl-fg-name').textContent, fgPlace(l)[0]]),
+      [['f102', '2F', '1'], ['z102:3', 'Terrace', '3'], ['f1', 'Home', '5']]);
+    assert.ok(lines[0].classList.contains('gl-fg-floor'));
+    assert.ok(lines[1].classList.contains('gl-fg-zone'));
+    assert.equal(doc.querySelectorAll('.greenline-floor-label').length, 0, 'no label column');
   });
 
-  test('jsdom: each pot has one cell, placed by its floor and cell index', async (t: Any) => {
+  test('jsdom: a long Chinese area name is cut with an ellipsis', async (t: Any) => {
+    const data = fixture();
+    data.grid.lines[1].name = '非常非常非常非常非常非常长的区域名字';
+    const { doc, core } = await setup(t, { pots: data });
+
+    const name = fgLines(doc)[1].querySelector('.gl-fg-name');
+    assert.equal(name.textContent, data.grid.lines[1].name);
+    const style = core.getComputedStyle(name);
+    assert.equal(style.textOverflow, 'ellipsis');
+    assert.equal(style.whiteSpace, 'nowrap');
+    assert.equal(style.overflow, 'hidden');
+  });
+
+  test('jsdom: a setPots that changes a line name runs one apply pass', async (t: Any) => {
+    const { core, root } = await setup(t);
+    await wait(core, 60);
+    const originalEval = core.eval.bind(core);
+    let stateReads = 0;
+    core.eval = (code: Any) => { if (code === 'state') stateReads++; return originalEval(code); };
+
+    const data = fixture();
+    data.grid.lines[1].name = 'Sunroom';
+    setPots(root, data);
+    await wait(core, 50);
+
+    assert.equal(fgLines(core.document)[1].querySelector('.gl-fg-name').textContent, 'Sunroom');
+    assert.equal(stateReads, 1);
+  });
+
+  // The area light and the area temperature in the free place of a line: [light, temp], or null with no values.
+  function lineValues(line?: Any) {
+    const end = line.querySelector('.gl-fg-end');
+    const light = end.querySelector('.greenline-area-light');
+    const temp = end.querySelector('.greenline-area-temp');
+    if (!light && !temp) return null;
+    return [light.textContent, temp.textContent];
+  }
+
+  test('jsdom: each line shows the area light after the sun and the area temperature after the thermometer at its right end', async (t: Any) => {
+    const { doc } = await setup(t);
+
+    const lines = fgLines(doc);
+    // The floor lines show the values of the main area of the floor (Interior), the zone line those of the Terrace.
+    assert.deepEqual(lines.map(lineValues), [['1', '+1'], ['2', '0'], ['1', '+1']]);
+    for (const line of lines) {
+      const end = line.querySelector('.gl-fg-end');
+      assert.ok(end.querySelector('.greenline-area-light svg.greenline-sun'), 'the sun icon');
+      assert.ok(end.querySelector('.greenline-area-temp svg.greenline-thermo'), 'the thermometer icon');
+      assert.ok(end.querySelector('.greenline-sun circle'), 'the circle of the sun of the HUD');
+    }
+  });
+
+  test('jsdom: a line shows no values when the pot data has none for its area', async (t: Any) => {
+    const data = fixture();
+    delete data.areas['3'];
+    const { doc, root } = await setup(t, { pots: data });
+
+    assert.deepEqual(fgLines(doc).map(lineValues), [['1', '+1'], null, ['1', '+1']]);
+
+    data.areas = {};
+    setPots(root, data);
+    assert.deepEqual(fgLines(doc).map(lineValues), [null, null, null]);
+    for (const end of doc.querySelectorAll('.gl-fg-end')) assert.equal(end.children.length, 0);
+  });
+
+  test('jsdom: the values have no color of their own for a cold or a dark area', async (t: Any) => {
+    const data = fixture();
+    data.areas['3'] = { name: 'Terrace', light: '0', temp: '-3' };
+    const { doc, core } = await setup(t, { pots: data });
+
+    const [warm, cold] = fgLines(doc).map((l: Any) => l.querySelector('.greenline-area-temp'));
+    assert.equal(cold.className, warm.className);
+    assert.equal(core.getComputedStyle(cold).color, core.getComputedStyle(warm).color);
+  });
+
+  test('jsdom: a setPots that changes only the area values runs one apply pass', async (t: Any) => {
+    const { core, root } = await setup(t);
+    await wait(core, 60);
+    const originalEval = core.eval.bind(core);
+    let stateReads = 0;
+    core.eval = (code: Any) => { if (code === 'state') stateReads++; return originalEval(code); };
+
+    const data = fixture();
+    data.areas['1'] = { name: 'Interior', light: '0.5', temp: '-2' };
+    setPots(root, data);
+    await wait(core, 50);
+
+    assert.deepEqual(lineValues(fgLines(core.document)[0]), ['0.5', '-2']);
+    assert.equal(stateReads, 1);
+  });
+
+  test('jsdom: each pot has one cell at the grid place of the data, from the left edge', async (t: Any) => {
     const { doc } = await setup(t);
 
     assert.equal(doc.querySelectorAll('.greenline-cell').length, 5);
-    assert.deepEqual(gridPlace(cell(doc, 1001)), ['1', '2']);
-    assert.deepEqual(gridPlace(cell(doc, 1002)), ['1', '3']);
-    assert.deepEqual(gridPlace(cell(doc, 1003)), ['2', '2']);
-    assert.deepEqual(gridPlace(cell(doc, 1004)), ['2', '3']);
-    assert.deepEqual(gridPlace(cell(doc, 1005)), ['2', '4']);
+    assert.deepEqual(fgPlace(cell(doc, 1001)), ['2', '1']);
+    assert.deepEqual(fgPlace(cell(doc, 1002)), ['4', '1']);
+    assert.deepEqual(fgPlace(cell(doc, 1003)), ['6', '1']);
+    assert.deepEqual(fgPlace(cell(doc, 1004)), ['6', '2']);
+    assert.deepEqual(fgPlace(cell(doc, 1005)), ['6', '3']);
     for (const c of doc.querySelectorAll('.greenline-cell')) assert.ok(c.hasAttribute('data-interactive'));
   });
 
-  // 8 empty pots on the home floor, after the 2 pots of the 2nd floor.
+  // 8 empty pots in the main area of the home floor, as GridLogic.Layout places them: 7 on the first line of cells and
+  // 1 on the next.
   function eightPotFloor() {
     const data = fixture();
-    const ids = [];
+    data.grid.cells = data.grid.cells.filter((c: Any) => c.row < 6);
     for (let i = 0; i < 8; i++) {
       const id = 2000 + i;
-      ids.push(id);
       data.pots[id] = Object.assign({}, data.pots['1003']);
+      data.grid.cells.push({ pot: id, row: 6 + Math.floor(i / 7), col: 1 + i % 7 });
     }
-    data.floors[1].cells = ids;
+    data.grid.rows = 7;
+    data.grid.cols = 7;
     return data;
   }
 
-  test('jsdom: a floor with 8 pots has 6 cells on its first line and 2 on the next', async (t: Any) => {
+  test('jsdom: an area with 8 pots has 7 cells on its first line and 1 on the next, with no line between them', async (t: Any) => {
     const { doc } = await setup(t, { pots: eightPotFloor() });
 
-    assert.deepEqual(gridPlace(doc.querySelector('.greenline-floor-label[data-floor-id="1"]')), ['2 / span 2', '1']);
-    assert.deepEqual(gridPlace(cell(doc, 2005)), ['2', '7']);
-    assert.deepEqual(gridPlace(cell(doc, 2006)), ['3', '2']);
-    assert.deepEqual(gridPlace(cell(doc, 2007)), ['3', '3']);
+    assert.deepEqual(fgPlace(cell(doc, 2006)), ['6', '7']);
+    assert.deepEqual(fgPlace(cell(doc, 2007)), ['7', '1']);
+    assert.deepEqual(fgLines(doc).map((l: Any) => fgPlace(l)[0]), ['1', '3', '5']);
   });
 
   test('jsdom: the popover has cell columns for the longest line only', async (t: Any) => {
     const small = await setup(t);
-    assert.match(small.doc.querySelector('.mature-popover').style.getPropertyValue('grid-template-columns'), /repeat\(3,/);
+    assert.equal(small.doc.querySelector('.mature-popover').style.getPropertyValue('--gl-fg-cols'), '3');
 
     const big = await setup(t, { pots: eightPotFloor() });
-    assert.match(big.doc.querySelector('.mature-popover').style.getPropertyValue('grid-template-columns'), /repeat\(6,/);
+    assert.equal(big.doc.querySelector('.mature-popover').style.getPropertyValue('--gl-fg-cols'), '7');
   });
 
   test('jsdom: a second setPots with the same data writes nothing to the DOM', async (t: Any) => {
@@ -289,7 +406,7 @@ if (!gameFileExists) {
     for (const c of doc.querySelectorAll('.greenline-cell')) {
       const id = c.getAttribute('data-pot-id');
       assert.equal(places[id], undefined, `pot ${id} has more than one cell`);
-      places[id] = gridPlace(c);
+      places[id] = fgPlace(c);
     }
     return places;
   }
@@ -303,7 +420,7 @@ if (!gameFileExists) {
 
     assert.ok(doc.querySelector('.mature-popover').classList.contains('greenline-grid'));
     assert.deepEqual(cellPlaces(doc), before);
-    assert.equal(doc.querySelectorAll('.greenline-floor-label').length, 2);
+    assert.equal(fgLines(doc).length, 3);
   });
 
   test('jsdom: a row added or removed by the game keeps each cell in its place', async (t: Any) => {
@@ -322,7 +439,7 @@ if (!gameFileExists) {
     await postPlants(core, []);
 
     assert.equal(doc.querySelector('.mature-panel'), null);
-    assert.equal(doc.querySelectorAll('.greenline-cell, .greenline-floor-label').length, 0);
+    assert.equal(doc.querySelectorAll('.greenline-cell, .gl-fg-line').length, 0);
   });
 
   test('jsdom: a countdown text write of the game triggers no work of the observer', async (t: Any) => {
@@ -553,6 +670,60 @@ if (!gameFileExists) {
     const fresh = makeRootWindow(t, rebuilt);
     runPageJs(fresh, '0');
     assert.equal(fresh.__greenline.check(), 'not applied');
+  });
+
+  test('jsdom: check() posts only a result that is not ok', async (t: Any) => {
+    const { root } = await setup(t);
+    root.__mod.length = 0;
+    root.__greenline.check(false);
+    assert.deepEqual(root.__mod, []);
+
+    const rebuilt = await loadCoreWindow(t);
+    const fresh = makeRootWindow(t, rebuilt);
+    runPageJs(fresh, '0');
+    fresh.__greenline.check(false);
+    assert.deepEqual(fresh.__mod, ['check not applied']);
+  });
+
+  test('jsdom: with Verbose, check() posts the counts of the apply passes once each real minute', async (t: Any) => {
+    const { root } = await setup(t);
+    let now = 1000000;
+    root.Date.now = () => now;
+    root.__mod.length = 0;
+
+    root.__greenline.check(false);
+    assert.deepEqual(root.__mod, [], 'no counts with no Verbose');
+    root.__greenline.check(true);
+    assert.equal(root.__mod.length, 1);
+    assert.match(root.__mod[0], /^counts applies \d+ observer \d+$/);
+    now += 30000;
+    root.__greenline.check(true);
+    assert.equal(root.__mod.length, 1, 'no counts within a minute');
+    now += 31000;
+    root.__greenline.check(true);
+    assert.equal(root.__mod.length, 2, 'the counts again after a minute');
+  });
+
+  test('jsdom: setPots with no CoreUI1 frame posts no frame', async (t: Any) => {
+    const root = makeRootWindow(t, null);
+    setPots(root, fixture());
+    assert.deepEqual(root.__mod, ['no frame']);
+  });
+
+  test('jsdom: an error of the page script posts error', async (t: Any) => {
+    const { core, root } = await setup(t);
+    root.__mod.length = 0;
+    core.eval = () => { throw new Error('state gone'); };
+
+    setPots(root, fixture());
+
+    assert.equal(root.__mod.length, 1);
+    assert.match(root.__mod[0], /^error .*state gone/);
+  });
+
+  test('jsdom: a setPots that applies with no problem posts nothing', async (t: Any) => {
+    const { root } = await setup(t);
+    assert.deepEqual(root.__mod, []);
   });
 
   test('jsdom: the mod registers no requestAnimationFrame callback', async (t: Any) => {
@@ -954,7 +1125,8 @@ if (!gameFileExists) {
   });
 
   function assertGridGone(doc?: Any, core?: Any) {
-    assert.equal(doc.querySelectorAll('.greenline-cell, .greenline-floor-label, .greenline-grid').length, 0);
+    assert.equal(doc.querySelectorAll('.greenline-cell, .gl-fg-line, .gl-fg, .greenline-grid').length, 0);
+    assert.equal(doc.querySelectorAll('[style*="--gl-fg-"]').length, 0, 'a property of the library stays');
     for (const row of doc.querySelectorAll('.mature-item-row')) assert.notEqual(core.getComputedStyle(row).display, 'none');
   }
 
@@ -974,6 +1146,10 @@ if (!gameFileExists) {
     const result = runPageJs(root, 'window.__greenline.install()');
     assert.match(result, /missing: grid\(\.mature-item-row\)/, `expected a missing-part report, got "${result}"`);
     assertGridGone(doc, core);
+
+    root.__mod.length = 0;
+    setPots(root, fixture());
+    assert.deepEqual(root.__mod, ['missing grid(.mature-item-row)']);
   });
 
   // The plant list message with the game's own Patrol values, as the header reads them.
@@ -1039,8 +1215,11 @@ if (!gameFileExists) {
     root.__greenline.step();
 
     const line = replantLine(doc);
-    assert.ok(line, 'no Auto-replant line');
-    assert.deepEqual(gridPlace(line), ['3', '1 / -1']);
+    assert.ok(line, 'no Auto-replant checkbox');
+    const last = doc.querySelector('.mature-popover > .greenline-last');
+    assert.ok(last.contains(line), 'the checkbox is on the last line');
+    assert.equal(last.style.getPropertyValue('--gl-fg-row'), '7');
+    assert.equal(last.style.getPropertyValue('grid-column'), '1 / -1');
     assert.ok(line.hasAttribute('data-interactive'));
     assert.ok(line.textContent.includes('Auto-replant'));
     assert.equal(line.querySelector('input[type=checkbox]').checked, true);
@@ -1068,6 +1247,108 @@ if (!gameFileExists) {
     const { doc } = await setup(t, { pots: Object.assign(fixture(), { patrol: false }) });
 
     assert.equal(replantLine(doc), null);
+  });
+
+  function pinOf(doc?: Any) { return doc.querySelector('.mature-popover > .greenline-last > .greenline-last-end > .gl-pin'); }
+
+  function pinPosts(received?: Any) {
+    return received.filter((m: Any) => m.type === 'GREENLINE_PIN').map((m: Any) => JSON.stringify({ ...m.data }));
+  }
+
+  async function pinned(t?: Any, pin?: Any, opts?: Any) {
+    const s = await setup(t, Object.assign({ pots: Object.assign(fixture(), { pin }) }, opts || {}));
+    await wait(s.core, 30);
+    const received: Any[] = [];
+    s.root.addEventListener('message', (e: Any) => received.push(e.data));
+    return Object.assign(s, { received });
+  }
+
+  test('jsdom: the last line shows the pin at its right end and no checkbox when Patrol is not there', async (t: Any) => {
+    const { doc } = await pinned(t, false, { pots: Object.assign(fixture(), { pin: false, patrol: false }) });
+
+    const last = doc.querySelector('.mature-popover > .greenline-last');
+    assert.ok(last, 'the last line');
+    assert.equal(last.style.getPropertyValue('--gl-fg-row'), '7');
+    assert.equal(replantLine(doc), null);
+    const pin = pinOf(doc);
+    assert.ok(pin, 'the pin in the free place at the right end of the last line');
+    assert.ok(!pin.classList.contains('gl-pin-on'), 'an outline pin');
+  });
+
+  test('jsdom: the last line shows the checkbox and the pin while Patrol is there', async (t: Any) => {
+    const { doc } = await pinned(t, false);
+
+    assert.ok(replantLine(doc), 'the Auto-replant checkbox');
+    assert.ok(pinOf(doc), 'the pin');
+    assert.match(doc.querySelector('#greenline-style').textContent, /--gl-pin-color:/);
+  });
+
+  test('jsdom: a pin click posts GREENLINE_PIN and does not close the list', async (t: Any) => {
+    const { doc, core, root, received } = await pinned(t, false);
+
+    pinOf(doc).click();
+    await wait(root, 30);
+
+    assert.deepEqual(pinPosts(received), ['{"on":true}']);
+    assert.equal(core.eval('state.maturePlantsExpanded'), true);
+  });
+
+  test('jsdom: a pinned list stays open when the game closes it for the trap list, the search, or Escape', async (t: Any) => {
+    const { doc, core } = await pinned(t, true);
+
+    assert.ok(pinOf(doc).classList.contains('gl-pin-on'), 'a filled pin');
+    core.eval('state.trapsExpanded = true; state.searchExpanded = false; state.maturePlantsExpanded = false');
+    assert.equal(core.eval('state.maturePlantsExpanded'), true, 'open after the trap list opens');
+    core.eval('state.searchExpanded = true; state.maturePlantsExpanded = false');
+    assert.equal(core.eval('state.maturePlantsExpanded'), true, 'open after the search opens');
+    core.document.dispatchEvent(new core.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    core.dispatchEvent(new core.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await wait(core, 30);
+    assert.equal(core.eval('state.maturePlantsExpanded'), true, 'open after Escape');
+    assert.ok(doc.querySelector('.mature-popover'), 'the list shows');
+  });
+
+  test('jsdom: a click on the chevron of a pinned list unpins it and the list closes', async (t: Any) => {
+    const { doc, core, root, received } = await pinned(t, true);
+
+    doc.querySelector('.mature-toggle-chevron').dispatchEvent(new core.MouseEvent('click', { bubbles: true }));
+    await wait(root, 30);
+
+    assert.deepEqual(pinPosts(received), ['{"on":false}']);
+    assert.equal(core.eval('state.maturePlantsExpanded'), false, 'the list closes');
+  });
+
+  test('jsdom: a Tend All click on a pinned list keeps the pin and the list open', async (t: Any) => {
+    const { doc, core, root, received } = await pinned(t, true);
+
+    const btn = tendButton(doc);
+    assert.ok(btn, 'the Tend All button');
+    btn.click();
+    await wait(root, 30);
+
+    assert.deepEqual(pinPosts(received), []);
+    assert.equal(core.eval('state.maturePlantsExpanded'), true);
+    assert.ok(pinOf(doc).classList.contains('gl-pin-on'));
+  });
+
+  test('jsdom: a pinned list that the game shows closed opens', async (t: Any) => {
+    const { core } = await pinned(t, true, { expanded: false });
+
+    assert.equal(core.eval('state.maturePlantsExpanded'), true);
+  });
+
+  test('jsdom: a setPots that changes only the pin runs one apply pass', async (t: Any) => {
+    const { core, root } = await pinned(t, false);
+    await wait(core, 60);
+    const originalEval = core.eval.bind(core);
+    let stateReads = 0;
+    core.eval = (code: Any) => { if (code === 'state') stateReads++; return originalEval(code); };
+
+    setPots(root, Object.assign(fixture(), { pin: true }));
+    await wait(core, 50);
+
+    assert.ok(pinOf(core.document).classList.contains('gl-pin-on'));
+    assert.equal(stateReads, 1);
   });
 
   test('jsdom: a missing chevron turns off only the Tend All button', async (t: Any) => {

@@ -53,6 +53,9 @@ if (!Object.values(FILES).every((f: Any) => fs.existsSync(f))) {
     root.__setFrames = (...ws: Any[]) => { box.current = ws; };
     root.__posted = [];
     root.postMessage = (msg: Any) => root.__posted.push(msg);
+    // The page messages to C# (window.vuplex.postMessage of the web view), without the prefix slmod|greenline|.
+    root.__mod = [];
+    root.vuplex = { postMessage: (m: Any) => root.__mod.push(String(m).replace(/^slmod\|greenline\|/, '')) };
     vm.createContext(root);
     vm.runInContext('window.__greenlinePlantCss=' + JSON.stringify(plantCss) + ';' + script, root, { filename: 'plantpanel.js' });
     return root;
@@ -229,5 +232,17 @@ if (!Object.values(FILES).every((f: Any) => fs.existsSync(f))) {
 
     assert.equal(root.__greenlinePlant.install(), 'missing: PlantPanel .plant-system h1');
     assert.equal(page.document.querySelector('.greenline-options'), null);
+    assert.deepEqual(root.__mod, ['plant panel missing: PlantPanel .plant-system h1']);
+  });
+
+  test('plantpanel: an install with no problem or with no frame yet posts nothing', async (t: Any) => {
+    const { root } = await setup(t, 'PlantPanel');
+    assert.deepEqual(root.__mod, []);
+
+    const empty = makeRoot();
+    t.onTestFinished(() => empty.close());
+    empty.__greenlinePlant.setState(STATE);
+    assert.equal(empty.__greenlinePlant.install(), 'no frame');
+    assert.deepEqual(empty.__mod, []);
   });
 }

@@ -1,21 +1,22 @@
 // The grid of pot cells: the layout, the cell content, the countdowns, and the cell click.
 import {
-  FEATURES, FERT_ICON, TILL_ICON, hasCountdown, hasCrop, isStalled, isUrgent, noHarvestWindow, partsMissing, place,
-  popoverShouldRender, rowsById, setImg, setStyle, shortTime, store, toggleClass
+  FEATURES, FERT_ICON, TILL_ICON, hasCountdown, hasCrop, isStalled, isUrgent, noHarvestWindow, partsMissing,
+  popoverShouldRender, rowsById, setImg, shortTime, store, toggleClass
 } from './core';
-import { applyReplant } from './tend';
-import type { CoreState, PlantRow, Pot } from './types';
+import { applyLast } from './tend';
+import { sunIcon, thermoIcon } from './icons';
+import type { AreaValues, CoreState, PlantRow, Pot } from './types';
+import { drawFloorGrid, placeCell, removeFloorGrid } from '../../Shared/floor-grid/web/floorGrid';
 
-const CELLS_PER_LINE = 6;
+// The prefix of the floor grid library: its classes are gl-fg-*, its properties --gl-fg-*.
+export const GRID_PREFIX = 'gl';
 
 // Removes everything the grid adds, so the list shows as the game's plain list.
 function clearGrid(doc: Document): void {
   const grids = doc.querySelectorAll<HTMLElement>('.greenline-grid');
-  for (let g = 0; g < grids.length; g++) {
-    grids[g].classList.remove('greenline-grid', 'greenline-zh');
-    if (grids[g].style.getPropertyValue('grid-template-columns')) grids[g].style.removeProperty('grid-template-columns');
-  }
-  const ours = doc.querySelectorAll('.greenline-floor-label, .greenline-cell, .greenline-replant');
+  for (let g = 0; g < grids.length; g++) grids[g].classList.remove('greenline-grid', 'greenline-zh');
+  removeFloorGrid(doc, GRID_PREFIX);
+  const ours = doc.querySelectorAll('.greenline-cell, .greenline-last');
   for (let n = 0; n < ours.length; n++) ours[n].remove();
 }
 
@@ -94,6 +95,32 @@ function fillCell(doc: Document, el: Element, pot: Pot): void {
   toggleClass(el, 'greenline-problem', isStalled(pot));
 }
 
+// One value of a line: the icon, then the text. Written only where it differs.
+function setValue(doc: Document, end: HTMLElement, cls: string, makeIcon: (d: Document) => SVGSVGElement, text: string): void {
+  let el = end.querySelector<HTMLElement>(':scope > .' + cls);
+  if (!el) {
+    el = doc.createElement('span');
+    el.className = cls;
+    el.appendChild(makeIcon(doc));
+    el.appendChild(doc.createElement('b'));
+    end.appendChild(el);
+  }
+  const b = el.querySelector('b')!;
+  if (b.textContent !== text) b.textContent = text;
+}
+
+// The values of an area in the free place of its line, as the HUD shows them: the sun with the area light, the
+// thermometer with the area temperature. No values (a failed read) leave the place empty. The values have no color of
+// their own: a pot with a problem keeps the game's badge.
+function setAreaValues(doc: Document, end: HTMLElement, values: AreaValues | undefined): void {
+  if (!values) {
+    while (end.firstChild) end.firstChild.remove();
+    return;
+  }
+  setValue(doc, end, 'greenline-area-light', sunIcon, values.light);
+  setValue(doc, end, 'greenline-area-temp', thermoIcon, values.temp);
+}
+
 // Posts what a game row posts on a click (UnitySendEvent('PLANT_MATURE_CLICK') from the CoreUI1
 // iframe to its parent, the root page, where this script runs). The game finds the pot by the id, not
 // in its plant list, so the click id of a pot with no game row (an empty or Poor pot) also works.
@@ -121,56 +148,44 @@ export function applyGrid(doc: Document, state: CoreState | undefined): string {
   const popover = doc.querySelector<HTMLElement>(FEATURES.grid[0])!;
   // The Chinese countdown has a smaller size of its own (page.css).
   toggleClass(popover, 'greenline-zh', data.lang === 'zh');
-  const floors = data.floors || [];
+  const grid = data.grid || { cols: 1, rows: 0, lines: [], cells: [] };
+  // The floor lines and zone lines at their rows (the floor grid library), and one cell for each pot at its row and
+  // column, as GridLogic.Layout gives them.
+  const ends = drawFloorGrid(doc, popover, {
+    prefix: GRID_PREFIX,
+    columns: grid.cols,
+    lines: grid.lines.map((l) => ({ key: l.key, kind: l.kind, row: l.row, name: l.name })),
+  });
+  // The area light and the area temperature of the area of each line in its free place at the right edge.
+  for (const l of grid.lines) {
+    const end = ends.get(l.key);
+    if (end) setAreaValues(doc, end, (data.areas || {})[String(l.area)]);
+  }
   const keep: Record<string, boolean> = {};
-  let line = 1, widest = 1;
-  for (let f = 0; f < floors.length; f++) {
-    const floor = floors[f];
-    const cells = floor.cells || [];
-    const lines = Math.max(1, Math.ceil(cells.length / CELLS_PER_LINE));
-    widest = Math.max(widest, Math.min(cells.length, CELLS_PER_LINE));
-
-    let label = popover.querySelector<HTMLElement>('.greenline-floor-label[data-floor-id="' + floor.id + '"]');
-    if (!label) {
-      label = doc.createElement('div');
-      label.className = 'greenline-floor-label';
-      label.setAttribute('data-floor-id', String(floor.id));
-      popover.appendChild(label);
+  for (const c of grid.cells) {
+    const potId = String(c.pot);
+    let el = popover.querySelector<HTMLElement>('.greenline-cell[data-pot-id="' + potId + '"]');
+    if (!el) {
+      el = doc.createElement('div');
+      el.className = 'greenline-cell';
+      el.setAttribute('data-pot-id', potId);
+      // CoreUI1 sends a click on an element without [data-interactive] to the game world.
+      el.setAttribute('data-interactive', '');
+      el.addEventListener('click', onCellClick);
+      popover.appendChild(el);
     }
-    place(label, line + ' / span ' + lines, '1');
-    if (label.textContent !== floor.label) label.textContent = floor.label;
-    keep['label:' + floor.id] = true;
-
-    for (let c = 0; c < cells.length; c++) {
-      const potId = String(cells[c]);
-      let el = popover.querySelector<HTMLElement>('.greenline-cell[data-pot-id="' + potId + '"]');
-      if (!el) {
-        el = doc.createElement('div');
-        el.className = 'greenline-cell';
-        el.setAttribute('data-pot-id', potId);
-        // CoreUI1 sends a click on an element without [data-interactive] to the game world.
-        el.setAttribute('data-interactive', '');
-        el.addEventListener('click', onCellClick);
-        popover.appendChild(el);
-      }
-      place(el, String(line + Math.floor(c / CELLS_PER_LINE)), String(2 + c % CELLS_PER_LINE));
-      fillCell(doc, el, (data.pots || {})[potId] || ({} as Pot));
-      keep['cell:' + potId] = true;
-    }
-    line += lines;
+    placeCell(el, GRID_PREFIX, c.row, c.col);
+    fillCell(doc, el, (data.pots || {})[potId] || ({} as Pot));
+    keep[potId] = true;
   }
 
-  const ours = popover.querySelectorAll('.greenline-floor-label, .greenline-cell');
+  const ours = popover.querySelectorAll('.greenline-cell');
   for (let o = 0; o < ours.length; o++) {
-    const key = ours[o].classList.contains('greenline-floor-label')
-      ? 'label:' + ours[o].getAttribute('data-floor-id')
-      : 'cell:' + ours[o].getAttribute('data-pot-id');
-    if (!keep[key]) ours[o].remove();
+    if (!keep[ours[o].getAttribute('data-pot-id')!]) ours[o].remove();
   }
 
-  applyReplant(doc, popover, line);
+  applyLast(doc, popover, grid.rows + 1);
   updateCountdowns(doc, state);
-  setStyle(popover, 'grid-template-columns', 'max-content repeat(' + widest + ', 26px)');
   if (!popover.classList.contains('greenline-grid')) popover.classList.add('greenline-grid');
   return '';
 }
