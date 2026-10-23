@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- While Tend All is on (`EnablePatrol`), the game's own Tend Garden of game 1.1.19611 is off: no watering-can button in the plant list header, no hotkey G, no Tend ×N quick action, and no guide tip. With `EnablePatrol` off, Tend Garden works as without the mod.
+- Tend All replaces the game's own Tend Garden of game 1.1.19611: no watering-can button in the plant list header, no hotkey G, no Tend ×N quick action, and no guide tip. With `EnablePatrol` off, Tend Garden works as without the mod.
+- The Tend All button keeps its name, "Tend All" (Chinese 一键巡田): game 1.1.19611 gives the word that the button read before to its own Tend Garden.
 
 ### Removed
 

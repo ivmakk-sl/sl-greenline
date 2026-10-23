@@ -26,13 +26,13 @@ The pin at the right end of the last line of the list keeps the list open: a pin
 
 ## Tend All
 
-Tend All requires planting level 3. The button shows the game's word, Tend Garden (game 1.1.19611 and later). The Tend All button appears in the plant list header when at least one pot needs a chore. Click it to queue one chore for each pot: Remove Pests, Remove Weeds, Water, Harvest, Clean Up, or Till, and the replant (see below). A pot that already has a chore in the queue gets no second one, and Tend All leaves a pot that a Farming GR-3 is on its way to. The robot in turn skips a pot that your character has queued.
+Tend All requires planting level 3. The Tend All button appears in the plant list header when at least one pot needs a chore. Click it to queue one chore for each pot: Remove Pests, Remove Weeds, Water, Harvest, Clean Up, or Till, and the replant (see below). A pot that already has a chore in the queue gets no second one, and Tend All leaves a pot that a Farming GR-3 is on its way to. The robot in turn skips a pot that your character has queued.
 
 Greenline queues each chore as a click in the pot's menu does, so the Stamina cost, the chore time, and the result stay the same as by hand. If your Stamina does not cover all chores, Tend All queues only the chores that it covers and shows how many. It never starts a pot that it cannot finish: a mature pot whose Harvest, Till, and Plant do not all fit waits for a later Tend All.
 
 The chores follow the shortest walk: first the pots of the floor you are on, then the other floors one by one. On each floor Tend All picks the order with the shortest walk through all pots, measured along the paths your character really walks, around walls and furniture. The kind of chore and the time left on a crop do not change the order. With Stamina for only part of the chores, Tend All goes along this route and queues each pot whose chores fit.
 
-Since game 1.1.19611 the game has its own version of this, Tend Garden: a watering-can button in the plant list header, the hotkey G, and a Tend ×N quick action in the bottom bar. While Tend All is on, Greenline turns Tend Garden off, so only one of the two runs. Tend Garden opens the planting window at each replant and waits for you to pick a seed; Tend All replants the same crop with no window.
+Since game 1.1.19611 the game has its own version of this, Tend Garden: a watering-can button in the plant list header, the hotkey G, and a Tend ×N quick action in the bottom bar. Tend All replaces it, so only one of the two runs. Tend Garden opens the planting window at each replant and waits for you to pick a seed; Tend All replants the same crop with no window.
 
 To disable Tend All, set `EnablePatrol` to `false` in the config file. Restart the game to apply the change. The pot grid still works, and the game's Tend Garden comes back. See [CONFIG.md](CONFIG.md).
 
