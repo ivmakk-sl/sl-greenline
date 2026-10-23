@@ -231,7 +231,7 @@ namespace Greenline
                 // No weather yet (a save still loading): no values for this check only, with no warning.
                 var weather = BaseSingleton<BattleLogicWorld>.Instance?._WeatherManager;
                 if (weather == null) return areas;
-                int weatherLight = weather.GetLightValue();
+                float weatherLight = weather.GetLightValue();
                 int weatherCold = weather.GetColdValue();
                 foreach (var pot in pots)
                 {

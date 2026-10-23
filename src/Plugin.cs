@@ -9,7 +9,7 @@ using GameCore.HotUpdate.Battle.Logic;
 
 namespace Greenline
 {
-    [BepInPlugin(PluginGuid, "Greenline", "1.3.0")]
+    [BepInPlugin(PluginGuid, "Greenline", "1.4.0")]
     [BepInProcess("SurvivalLog.exe")]
     public sealed class Plugin : BasePlugin
     {
@@ -33,7 +33,7 @@ namespace Greenline
                 "Log pot grid, replant, and page script detail at Debug level. Keep off in normal play.");
             EnablePatrol = Config.Bind(
                 "General", "EnablePatrol", true,
-                "Tend All: one button queues the chores of all pots, within your Stamina, in the order of the shortest walk. Needs planting level 3. Restart the game after a change.");
+                "Tend All: one button queues the chores of all pots, within your Stamina, in the order of the shortest walk. Needs planting level 3. While on, the game's own Tend Garden is off. Restart the game after a change.");
             WorldHoverCard = Config.Bind(
                 "General", "WorldHoverCard", true,
                 "Show the pot card next to the pot when the pointer is on a pot in the game world. After an error it turns off by itself until the next game start; the rest of the mod keeps working.");
@@ -73,6 +73,7 @@ namespace Greenline
                          typeof(PageMessages),
                          typeof(SaveKeysOnStartBattle),
                          typeof(SaveKeysOnLoadAgent),
+                         typeof(GamePatrolOff),
                      })
             {
                 try { Harmony.CreateClassProcessor(type).Patch(); }

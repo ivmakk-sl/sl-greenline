@@ -54,7 +54,8 @@ namespace Greenline
 
     // The order in which a robot picks its next chore. PlantChoreManager.CollectCandidates calls TryResolveChore
     // for each pot and sorts the candidates by PlantChore.Rank, then DecayRemain: Remove Pests 0, Harvest 1,
-    // Remove Weeds and Water 3, Till and the robot's Plant 4. With EnableRobotReplant on, a native detour of
+    // Remove Weeds and Water 3, Till and the robot's Plant 1 with a DecayRemain of 18000 s (SowUrgencySeconds, game
+    // 1.1.19611; rank 4 before), so a Harvest with less time left goes first. With EnableRobotReplant on, a native detour of
     // TryResolveChore gives a Till or a Plant candidate a place after Remove Pests and before each Harvest
     // (RobotLogic.FinishRank), so a robot finishes an emptied pot before its next harvest. The game's own checks
     // (seeds, environment, claims) still run later, in TryPick. A Harmony patch of TryResolveChore fails in the

@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-23
+
+### Changed
+
+- While Tend All is on (`EnablePatrol`), the game's own Tend Garden of game 1.1.19611 is off: no watering-can button in the plant list header, no hotkey G, no Tend ×N quick action, and no guide tip. With `EnablePatrol` off, Tend Garden works as without the mod.
+
+### Removed
+
+- Support for game versions before 1.1.19611: the area light of the pot grid reads the light of the weather as a decimal number, as game 1.1.19611 gives it.
+
 ## [1.3.0] - 2026-10-22
 
 ### Added
