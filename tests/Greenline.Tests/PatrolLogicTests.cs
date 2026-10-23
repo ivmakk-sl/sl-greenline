@@ -163,4 +163,16 @@ public class PatrolLogicTests
 
         Assert.Equal("2:1617 2:1618 2:1610 1:1617 1:1618 1:1610", string.Join(" ", plan.Sends.Select(s => s.PotId + ":" + s.ActionId)));
     }
+
+    // The switch of the game's own Patrol (Tend Garden, GameKey.PlantChoreBatchEnabled): off while Greenline's
+    // Patrol is on, left as the game has it while Greenline's Patrol is off.
+    [Theory]
+    [InlineData(true, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, true)]
+    [InlineData(false, false, false)]
+    public void GameSwitch_is_off_while_the_option_is_on_and_the_game_value_while_it_is_off(bool enablePatrol, bool gameValue, bool expected)
+    {
+        Assert.Equal(expected, PatrolLogic.GameSwitch(enablePatrol, gameValue));
+    }
 }

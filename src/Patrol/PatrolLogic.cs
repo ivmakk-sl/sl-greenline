@@ -9,6 +9,10 @@ namespace Greenline
     // PlantChoreBatchManager.ResolveChoreAction and OnBatchRequest). No game or BepInEx type here.
     public static class PatrolLogic
     {
+        // The value of the switch of the game's own Patrol (Tend Garden, GameKey.PlantChoreBatchEnabled, on from game
+        // 1.1.19611): off while Greenline's Patrol is on, so the two never both show; the game's value while it is off.
+        public static bool GameSwitch(bool enablePatrol, bool gameValue) => !enablePatrol && gameValue;
+
         // The plant actions of the furniture menu of a pot.
         public const int Plant = 1610, Pest = 1613, Weed = 1614, Water = 1615, CleanUp = 1616, Harvest = 1617, Till = 1618;
 

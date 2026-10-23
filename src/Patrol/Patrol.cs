@@ -11,7 +11,8 @@ namespace Greenline
 {
     // Greenline's own Patrol (Tend All): it finds the chore of each pot as the game's own Patrol does,
     // orders the chores on the Patrol route, cuts them at the Stamina, and queues each one as a click in the
-    // menu of the pot (ChoreSender). The game's own Patrol stays switched off.
+    // menu of the pot (ChoreSender). While it is on, the game's own Patrol (Tend Garden) stays switched off
+    // (GamePatrolOff).
     internal static class Patrol
     {
         // Whether Patrol can run: the config option, planting level 3, and a working send of a chore.
@@ -169,6 +170,28 @@ namespace Greenline
                 sb.Append(s.PotId).Append(':').Append(floors[s.PotId]).Append(':').Append(s.ActionId);
             }
             return sb.Append("] budget ").Append(budget).Append(" queued ").Append(sent).Append(" of ").Append(plan.Total).ToString();
+        }
+    }
+
+    // Keeps the game's own Patrol (Tend Garden) off while Greenline's Patrol is on. Its one switch,
+    // GameKey.PlantChoreBatchEnabled, gates its button, the hotkey G, the "Tend ×N" quick action, the count of the
+    // button, and the guide tip (PlantChoreBatchManager.IsUnlocked). This reducer sets the header value from the switch
+    // at the load and at each planting level up, so the switch goes off before the reducer reads it, and the reducer
+    // then hides the button and the guide tip itself.
+    [HarmonyLib.HarmonyPatch(typeof(GameCore.HotUpdate.ReduxUI.Reducer_Web_CoreUI1), "RA_PlantOverviewUnlock")]
+    internal static class GamePatrolOff
+    {
+        private static void Prefix()
+        {
+            try
+            {
+                bool game = GameKey.PlantChoreBatchEnabled;
+                bool want = GameSwitch(Plugin.EnablePatrol.Value, game);
+                if (want == game) return;
+                GameKey.PlantChoreBatchEnabled = want;
+                if (Plugin.Verbose.Value) Plugin.Log.LogDebug("Greenline: the game's own Patrol (Tend Garden) is switched off.");
+            }
+            catch (Exception e) { Plugin.WarnOnce($"Greenline: the game's own Patrol could not be switched off: {e.Message}"); }
         }
     }
 }

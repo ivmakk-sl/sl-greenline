@@ -1,3 +1,7 @@
+v1.4.0 - 2026-10-23
+Changed: While Tend All is on, the game's own Tend Garden (game 1.1.19611) is off: no watering-can button, no hotkey G, no Tend ×N quick action. Set EnablePatrol to false to use the game's Tend Garden instead.
+Removed: Support for game versions before 1.1.19611.
+
 v1.3.0 - 2026-10-22
 Added: Each floor and area line of the pot grid shows the light and the temperature of that area, the same values as the HUD, so you see which pots a cold wave hits.
 Added: Pin the plant list to keep it open.

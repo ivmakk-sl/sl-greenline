@@ -6,7 +6,7 @@ Every setting lives in `BepInEx\config\com.ivmakk.survivallog.greenline.cfg`, wr
 
 | Setting | Default | Values | What it does |
 |---|---|---|---|
-| `EnablePatrol` | `true` | `true`, `false` | Tend All, from planting level 3. Off: no Tend All button and no replant by Tend All. The pot grid, the pot card, the last-crop line, and the Farming GR-3 features still work. |
+| `EnablePatrol` | `true` | `true`, `false` | Tend All, from planting level 3. While on, the game's own Tend Garden (game 1.1.19611: its button, the hotkey G, and the Tend ×N quick action) is off. Off: no Tend All button and no replant by Tend All, and Tend Garden works as without the mod. The pot grid, the pot card, the last-crop line, and the Farming GR-3 features still work. |
 | `WorldHoverCard` | `true` | `true`, `false` | The pot card above a pot when you point at it in the game world. Off: the card shows only for a grid cell. After an error it turns itself off until the next game start, with a warning in the log. |
 | `EnableRobotReplant` | `true` | `true`, `false` | The Farming GR-3 features: Same as last crop in its Sowing Presets, and the robot tills and plants each empty pot before its next harvest, also after it stops to charge (only Remove Pests comes first). Off: the robot works as in the game without Greenline, and a robot set to Same as last crop plants nothing in that pot size until you pick a seed. |
 | `PinGrid` | `false` | `true`, `false` | Keeps the HUD plant list open. The pin at the right end of the last line of the list sets it, so you do not need to edit it. |
