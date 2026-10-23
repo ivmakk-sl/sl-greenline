@@ -34,7 +34,8 @@ public class ModTextsTests
         { "autoOff", null, "(auto: off)", "（自动：关）" },
         { "valueOn", null, "On", "开" },
         { "valueOff", null, "Off", "关" },
-        { "tendAll", "SR_Web_CoreUI1_117", "Tend All", "一键巡田" },
+        // The label of the mod: the game gave its own Patrol the text of SR_Web_CoreUI1_117 (Tend Garden, 巡园) in 1.1.19611.
+        { "tendAll", null, "Tend All", "一键巡田" },
         { "autoReplant", null, "Auto-replant", "自动补种" },
         { "autoFert", null, "Auto-fertilize", "自动施肥" },
         { "lastCrop", null, "Last crop:", "上次作物：" },

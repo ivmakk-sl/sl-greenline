@@ -11,7 +11,6 @@
   "problemLightHigh": "WebUI_PlantPanel_22",
   "problemNeedFert": "SR_Web_DailyFert_StateFertStalled",
   "labelFertilizer": "ItemType11",
-  "tendAll": "SR_Web_CoreUI1_117",
   "reasonLight": "WebUI_PlantPanel_21",
   "reasonCold": "WebUI_PlantPanel_23",
   "patrolNoStamina": "HandMadeComponent_0",
