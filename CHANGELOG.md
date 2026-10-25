@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- When a game update breaks one part of Same as last crop, the whole feature now turns off, and the robot works as in the normal game. Before, the other parts stayed on.
+
 ## [1.4.0] - 2026-10-23
 
 ### Changed

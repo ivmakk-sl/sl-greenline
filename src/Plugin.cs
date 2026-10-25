@@ -94,28 +94,47 @@ namespace Greenline
         // warning, and the robot window shows and works as without the mod.
         private static void PatchRobot()
         {
-            var patched = new List<System.Reflection.MethodBase>();
-            foreach (var type in new[]
-                     {
-                         typeof(RobotOnSetSowPreset),
-                         typeof(RobotOnSowPlant),
-                         typeof(RobotOnGetSowPreset),
-                         null, // the native detour of PlantChoreManager.ResolveSowPlan
-                         typeof(RobotOnBuildSowData),
-                     })
+            var types = new[]
+            {
+                typeof(RobotOnSetSowPreset),
+                typeof(RobotOnSowPlant),
+                typeof(RobotOnGetSowPreset),
+                null, // the native detour of PlantChoreManager.ResolveSowPlan
+                typeof(RobotOnBuildSowData),
+            };
+            foreach (var type in types)
             {
                 try
                 {
                     if (type == null) RobotPlanDetour.Apply();
-                    else patched.AddRange(Harmony.CreateClassProcessor(type).Patch());
+                    else Harmony.CreateClassProcessor(type).Patch();
                 }
                 catch (Exception e)
                 {
-                    foreach (var original in patched) Harmony.Unpatch(original, HarmonyPatchType.All, Harmony.Id);
+                    UnpatchGroup(types);
                     RobotPlanDetour.Undo();
                     Log.LogWarning($"patch {type?.Name ?? "PlantChoreManager.ResolveSowPlan"} failed, its target method is missing, Same as last crop is off: {e.Message}");
                     return;
                 }
+            }
+        }
+
+        // Takes off the patch methods of the classes of a group. Patch() gives the replacement methods, not the
+        // originals, so the patches are found by their declaring class; only these patch methods come off, so another
+        // patch of the mod on the same original stays.
+        private static void UnpatchGroup(Type[] types)
+        {
+            var group = new HashSet<Type>(types);
+            foreach (var original in new List<System.Reflection.MethodBase>(Harmony.GetPatchedMethods()))
+            {
+                var info = HarmonyLib.Harmony.GetPatchInfo(original);
+                var patches = new List<Patch>();
+                patches.AddRange(info.Prefixes);
+                patches.AddRange(info.Postfixes);
+                patches.AddRange(info.Transpilers);
+                patches.AddRange(info.Finalizers);
+                foreach (var patch in patches)
+                    if (patch.owner == Harmony.Id && group.Contains(patch.PatchMethod.DeclaringType)) Harmony.Unpatch(original, patch.PatchMethod);
             }
         }
 
