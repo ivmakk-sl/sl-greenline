@@ -39,7 +39,7 @@ namespace Greenline
                 "Show the pot card next to the pot when the pointer is on a pot in the game world. After an error it turns off by itself until the next game start; the rest of the mod keeps working.");
             EnableRobotReplant = Config.Bind(
                 "General", "EnableRobotReplant", true,
-                "The Farming GR-3: Same as last crop in its Sowing Presets, and it tills and plants each empty pot before its next harvest, also after it stops to charge (only Remove Pests comes first). Set to false for the robot as in the game without Greenline: a robot set to Same as last crop then plants nothing in that pot size until you pick a seed. Restart the game after a change.");
+                "The Farming GR-3: Same as last crop in its Sowing Presets, and it tills and plants each empty pot before its next harvest, also after it stops to charge (only Remove Pests comes first). Set to false for the robot as in the game without Greenline: a robot set to Same as last crop then plants nothing in that pot size until you pick a seed.");
             PinGrid = Config.Bind(
                 "General", "PinGrid", false,
                 "Keeps the HUD plant list open (the pin at the right end of the last line of the list sets this).");
@@ -53,6 +53,14 @@ namespace Greenline
                 new ConfigDescription(
                     "The opacity of the background of the pot card and the other Greenline tooltips. 0 is fully see-through, 1 is solid. The game uses 0.96. The icons and the text stay fully visible. Restart the game after a change.",
                     new AcceptableValueRange<float>(0f, 1f)));
+            // EnableRobotReplant takes effect while the game runs: the robot patches attach here and check it first. A
+            // hand edit of the file is read at the next save load or settings window open.
+            Config.SettingChanged += (_, e) =>
+            {
+                if (Verbose.Value) Log.LogDebug($"config: {e.ChangedSetting.Definition.Key} = {e.ChangedSetting.BoxedValue}");
+            };
+            SlShared.ConfigFile.ConfigFileReload.Setup(Config.ConfigFilePath, Config.Reload,
+                text => Log.LogWarning("Greenline: " + text), text => { if (Verbose.Value) Log.LogDebug(text); });
             Harmony = new Harmony(PluginGuid);
             // Each patch target is attached on its own, so a target missing after a game update turns
             // off only its own feature.
@@ -74,17 +82,17 @@ namespace Greenline
                          typeof(SaveKeysOnStartBattle),
                          typeof(SaveKeysOnLoadAgent),
                          typeof(GamePatrolOff),
+                         typeof(SlShared.ConfigFile.ConfigFileReloadOnHudReady),
+                         typeof(SlShared.ConfigFile.ConfigFileReloadOnSettings),
                      })
             {
                 try { Harmony.CreateClassProcessor(type).Patch(); }
                 catch (Exception e) { Log.LogWarning($"patch {type.Name} failed, its target method is missing: {e.Message}"); }
             }
-            // The two robot groups share one switch; each still turns off alone when its target is missing.
-            if (EnableRobotReplant.Value)
-            {
-                PatchRobot();
-                PatchRobotOrder();
-            }
+            // The two robot groups share one switch, which each patch checks first; each group still turns off alone
+            // when its target is missing.
+            PatchRobot();
+            PatchRobotOrder();
 
             Log.LogInfo("Greenline loaded.");
         }

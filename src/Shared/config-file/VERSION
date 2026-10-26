@@ -1,0 +1,5 @@
+# Library copy of shared/config-file. Do not edit it: edit shared/config-file/, then run tools/shared-sync.ps1 -Mod Greenline -Lib config-file.
+name=config-file
+version=1.0.0
+sha256 cs/ConfigFileCheck.cs 7b0e6071031bf745e315a92230363cf126679382eb3f21200ffb4531fe2a29ad
+sha256 cs-game/ConfigFileReload.cs 1a68263cd5733fef566e71a398a2963f3b62ff40cc4474daebb350bcfb872366

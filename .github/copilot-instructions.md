@@ -10,6 +10,7 @@ This repo is a BepInEx 6 (IL2CPP) Harmony mod for *Survival Log*. Plugins derive
 - **Never read an `Il2CppSystem.ValueTuple<...>` result of a game method,** direct or as a list element. The interop layer reads the fields wrongly and gives garbage with no error. Expect a method that returns a class, a dictionary, or an `Il2CppStructArray`, or the value calculated in the mod.
 - **Guard game lookups.** Singletons and config lookups return null often. Flag an unchecked dereference inside a patch.
 - **A patch must not break the game.** Each patch body sits in a try/catch that logs the error, so the HUD and the action queue fall back to the game's own behavior.
+- **A robot patch checks its switch first.** Each patch of the robot groups and both native detours attach at the start, and their first statement checks `EnableRobotReplant` (a Prefix returns `true`, a Postfix returns, a detour calls the original), so the switch takes effect while the game runs; the library `config-file` reads a hand edit of the file at a save load or the settings window open. Flag robot work before the switch check.
 
 ## Structure and tests
 

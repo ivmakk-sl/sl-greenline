@@ -1,6 +1,6 @@
 # Configuration
 
-Every setting lives in `BepInEx\config\com.ivmakk.survivallog.greenline.cfg`, written the first time you run the game with the mod installed. Edit it with any text editor while the game is closed. Changes apply at the next game start.
+Every setting lives in `BepInEx\config\com.ivmakk.survivallog.greenline.cfg`, written the first time you run the game with the mod installed. Edit it with any text editor. `EnableRobotReplant` applies while you play: at once in an in-game config manager, or after an edit of the file at the next save load or when you open Settings. The other settings apply at the next game start: edit them while the game is closed.
 
 ## General
 

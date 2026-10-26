@@ -88,6 +88,7 @@ namespace Greenline
     {
         private static bool Prefix(DynamicNpc __instance, long robotId, int tier, int seedItemId)
         {
+            if (!Plugin.EnableRobotReplant.Value) return true;
             if (seedItemId != RobotLogic.Placeholder || __instance == null || robotId != __instance.InstanceId) return true;
             try
             {
@@ -119,6 +120,7 @@ namespace Greenline
 
         private static void Postfix(RobotPanelData data, RobotComponent comp)
         {
+            if (!Plugin.EnableRobotReplant.Value) return;
             if (data == null || comp == null) return;
             try
             {
@@ -163,6 +165,7 @@ namespace Greenline
     {
         private static void Prefix(EffectBtArgs args)
         {
+            if (!Plugin.EnableRobotReplant.Value) return;
             try
             {
                 long robotId = args != null ? args.OwnerId : 0;
@@ -242,6 +245,7 @@ namespace Greenline
 
         private static int Hook(IntPtr self, IntPtr furniture, IntPtr ctx, IntPtr candidate, IntPtr methodInfo)
         {
+            if (!Plugin.EnableRobotReplant.Value) return original(self, furniture, ctx, candidate, methodInfo);
             int[] saved = null;
             try
             {
@@ -277,6 +281,7 @@ namespace Greenline
         // of the game goes on.
         private static void Postfix(int tier, ref int __result)
         {
+            if (!Plugin.EnableRobotReplant.Value) return;
             try { __result = RobotSow.Resolve(__result, tier, RobotSow.SowPot); }
             catch (Exception e) { Plugin.WarnOnce($"Greenline robot: the preset of a sow failed: {e.Message}"); }
         }

@@ -104,6 +104,7 @@ namespace Greenline
 
         private static byte Hook(IntPtr self, IntPtr furniture, IntPtr plantComp, IntPtr ctx, IntPtr candidate, IntPtr stats, IntPtr methodInfo)
         {
+            if (!Plugin.EnableRobotReplant.Value) return original(self, furniture, plantComp, ctx, candidate, stats, methodInfo);
             byte result = original(self, furniture, plantComp, ctx, candidate, stats, methodInfo);
             try
             {

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- `EnableRobotReplant` takes effect while you play, with no game restart: at once in an in-game config manager, or after an edit of the config file at the next save load or when you open Settings.
+
 ### Fixed
 
 - When a game update breaks one part of Same as last crop, the whole feature now turns off, and the robot works as in the normal game. Before, the other parts stayed on.
